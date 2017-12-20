@@ -20,16 +20,20 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 
 public class CityViewModel extends ViewModel {
 
     private final ArrayList<FilterableCity> citiesCache;
+    private String lastFilterString;
+
     public final ObservableBoolean isLoading;
     public final ObservableArrayList<FilterableCity> filteredCities;
     public final ObservableField<String> filter;
 
-    ExecutorService service = Executors.newSingleThreadExecutor();
+    private Future futureTask;
+    private final ExecutorService worker = Executors.newSingleThreadExecutor();
 
 
     public CityViewModel() {
@@ -37,6 +41,7 @@ public class CityViewModel extends ViewModel {
         filteredCities = new ObservableArrayList<>();
         filter = new ObservableField<>();
         citiesCache = new ArrayList<>();
+        lastFilterString = new String();
     }
 
     public void init(final Context context) {
@@ -57,39 +62,57 @@ public class CityViewModel extends ViewModel {
     }
 
     /**
-     * Expose  method for parsing cities so this can be calles synchronously in tests
+     * Expose functionality separately so this can be calles synchronously in tests
      */
-    protected void makeSortedCitiesFromInputStream(final InputStream inputStream){
+    protected void makeSortedCitiesFromInputStream(final InputStream inputStream) {
 
         //Store the full list in a local variable and set the initial state
         citiesCache.addAll(sortCities(parseCities(inputStream)));
+
+        //Initialise filter parsing
         filteredCities.addAll(filterCities(filter.get(), citiesCache));
-
-        //Initialize the filter listener
-        initFilterHandler();
-    }
-
-
-    protected void initFilterHandler(){
         filter.addOnPropertyChangedCallback(new Observable.OnPropertyChangedCallback() {
             @Override
             public void onPropertyChanged(Observable observable, int i) {
-                filteredCities.clear();
-                filteredCities.addAll(filterCities(filter.get(), citiesCache));
+
+                // If the user types faster than we can filter just stop the previous execution and start a new filter task
+                if(futureTask!=null && !futureTask.isDone()) {
+                    futureTask.cancel(true);
+                }
+
+                futureTask = worker.submit(new Runnable() {
+                    @Override
+                    public void run() {
+
+                        final List<FilterableCity> filterableCities = filterCities(filter.get(), citiesCache);
+
+                        //As this will is managed by a worker thread make sure you skip this
+                        if(!Thread.interrupted()) {
+                            filteredCities.clear();
+                            filteredCities.addAll(filterableCities);
+                        }
+                    }
+                });
             }
         });
     }
 
-    protected  List<FilterableCity> filterCities(String filterString, List<FilterableCity> cities){
+
+    protected List<FilterableCity> filterCities(String filterString, List<FilterableCity> cities) {
 
         //If we have nothing to filter with there's no point going any further
-        if(filterString==null || filterString.isEmpty()){
+        if (filterString == null || filterString.isEmpty()) {
             return cities;
         }
 
         List<FilterableCity> result = new ArrayList<>();
-        for(FilterableCity city: cities){
-            if(city.getDisplayName().toLowerCase().startsWith(filterString.toLowerCase())){
+        for (FilterableCity city : cities) {
+
+            //As this will is managed by a worker thread make sure you stop executing if the work is no longer needed.
+            if(Thread.interrupted()){
+                break;
+            }
+            if (city.getDisplayName().toLowerCase().startsWith(filterString.toLowerCase())) {
                 result.add(city);
             }
         }
@@ -134,7 +157,7 @@ public class CityViewModel extends ViewModel {
         public String getDisplayName() {
 
             //Lazy compute property even though in this ViewModel it will be called almost immediately.
-            if(displayName==null){
+            if (displayName == null) {
                 displayName = String.format("%s, %s", name, country);
             }
             return displayName;
