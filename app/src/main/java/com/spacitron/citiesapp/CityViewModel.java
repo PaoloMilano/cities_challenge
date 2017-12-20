@@ -19,14 +19,11 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-/**
- * Created by paolo on 20/12/2017.
- */
 
 public class CityViewModel extends ViewModel {
 
     ObservableBoolean isLoading;
-    ObservableArrayList<FilterableCity> filteredCities;
+    public ObservableArrayList<FilterableCity> filteredCities;
     ObservableField<String> filter;
 
     ExecutorService service = Executors.newSingleThreadExecutor();
@@ -38,7 +35,7 @@ public class CityViewModel extends ViewModel {
         filter = new ObservableField<>();
     }
 
-    public void subscribe(final Context context) {
+    public void init(final Context context) {
         // This should not be stopped until it completes so use a throwaway thread when first subscribing
         new Thread(new Runnable() {
             @Override
@@ -46,7 +43,9 @@ public class CityViewModel extends ViewModel {
                 try {
 
                     // Get the InputStream here so you don't need to pass context to other methods
-                    parseCities(context.getAssets().open("cities.json"));
+                    final InputStream is = context.getAssets().open("cities_test.json");
+                    List<FilterableCity> cities = sortCities(parseCities(is));
+                    filteredCities.addAll(cities);
 
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -100,8 +99,5 @@ public class CityViewModel extends ViewModel {
             return displayName;
         }
 
-        public boolean isVisible() {
-            return true;
-        }
     }
 }
