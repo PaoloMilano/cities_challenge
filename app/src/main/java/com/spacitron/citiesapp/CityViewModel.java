@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -32,7 +33,9 @@ public class CityViewModel extends ViewModel {
 
 
     public CityViewModel() {
-
+        isLoading = new ObservableBoolean();
+        filteredCities = new ObservableArrayList<>();
+        filter = new ObservableField<>();
     }
 
     public void subscribe(final Context context) {
@@ -58,21 +61,47 @@ public class CityViewModel extends ViewModel {
 
         final List<FilterableCity> result = new GsonBuilder()
                 .create()
-                .fromJson(reader, new TypeToken<List<FilterableCity>>(){}.getType());
+                .fromJson(reader, new TypeToken<List<FilterableCity>>() {
+                }.getType());
 
         // There may be null entries at the end of this. Make sure those are removed.
         result.removeAll(Collections.singleton(null));
 
         try {
             reader.close();
-        } catch (IOException e) {}
+        } catch (IOException e) {
+        }
 
         return result;
     }
 
-    class FilterableCity extends City {
+
+    protected List<FilterableCity> sortCities(final List<FilterableCity> cities) {
+        Collections.sort(cities, new Comparator<FilterableCity>() {
+            @Override
+            public int compare(FilterableCity o1, FilterableCity o2) {
+                return o1.getDisplayName().compareTo(o2.getDisplayName());
+            }
+        });
+
+        return cities;
+    }
+
+    public class FilterableCity extends City {
+
+        private String displayName;
+
+        public String getDisplayName() {
+
+            //Lazy compute property even though in this ViewModel it will be called almost immediately.
+            if(displayName==null){
+                displayName = String.format("%s, %s", name, country);
+            }
+            return displayName;
+        }
+
         public boolean isVisible() {
-            return filter.get() == null || filter.get().isEmpty() || name.startsWith(filter.get());
+            return true;
         }
     }
 }
