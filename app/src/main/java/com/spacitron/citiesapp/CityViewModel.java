@@ -2,6 +2,7 @@ package com.spacitron.citiesapp;
 
 import android.arch.lifecycle.ViewModel;
 import android.content.Context;
+import android.databinding.Observable;
 import android.databinding.ObservableArrayList;
 import android.databinding.ObservableBoolean;
 import android.databinding.ObservableField;
@@ -13,6 +14,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -22,9 +24,10 @@ import java.util.concurrent.Executors;
 
 public class CityViewModel extends ViewModel {
 
-    ObservableBoolean isLoading;
-    public ObservableArrayList<FilterableCity> filteredCities;
-    ObservableField<String> filter;
+    private final ArrayList<FilterableCity> citiesCache;
+    public final ObservableBoolean isLoading;
+    public final ObservableArrayList<FilterableCity> filteredCities;
+    public final ObservableField<String> filter;
 
     ExecutorService service = Executors.newSingleThreadExecutor();
 
@@ -33,6 +36,7 @@ public class CityViewModel extends ViewModel {
         isLoading = new ObservableBoolean();
         filteredCities = new ObservableArrayList<>();
         filter = new ObservableField<>();
+        citiesCache = new ArrayList<>();
     }
 
     public void init(final Context context) {
@@ -43,9 +47,7 @@ public class CityViewModel extends ViewModel {
                 try {
 
                     // Get the InputStream here so you don't need to pass context to other methods
-                    final InputStream is = context.getAssets().open("cities_test.json");
-                    List<FilterableCity> cities = sortCities(parseCities(is));
-                    filteredCities.addAll(cities);
+                    makeSortedCitiesFromInputStream(context.getAssets().open("cities.json"));
 
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -54,6 +56,45 @@ public class CityViewModel extends ViewModel {
         }).start();
     }
 
+    /**
+     * Expose  method for parsing cities so this can be calles synchronously in tests
+     */
+    protected void makeSortedCitiesFromInputStream(final InputStream inputStream){
+
+        //Store the full list in a local variable and set the initial state
+        citiesCache.addAll(sortCities(parseCities(inputStream)));
+        filteredCities.addAll(filterCities(filter.get(), citiesCache));
+
+        //Initialize the filter listener
+        initFilterHandler();
+    }
+
+
+    protected void initFilterHandler(){
+        filter.addOnPropertyChangedCallback(new Observable.OnPropertyChangedCallback() {
+            @Override
+            public void onPropertyChanged(Observable observable, int i) {
+                filteredCities.clear();
+                filteredCities.addAll(filterCities(filter.get(), citiesCache));
+            }
+        });
+    }
+
+    protected  List<FilterableCity> filterCities(String filterString, List<FilterableCity> cities){
+
+        //If we have nothing to filter with there's no point going any further
+        if(filterString==null || filterString.isEmpty()){
+            return cities;
+        }
+
+        List<FilterableCity> result = new ArrayList<>();
+        for(FilterableCity city: cities){
+            if(city.getDisplayName().toLowerCase().startsWith(filterString.toLowerCase())){
+                result.add(city);
+            }
+        }
+        return result;
+    }
 
     protected List<FilterableCity> parseCities(final InputStream inputStream) {
         final BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));

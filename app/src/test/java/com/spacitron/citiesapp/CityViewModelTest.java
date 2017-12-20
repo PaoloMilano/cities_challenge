@@ -27,9 +27,12 @@ public class CityViewModelTest {
             "{\"country\":\"RU\",\"name\":\"Mar\u2019ina Roshcha\",\"_id\":529334,\"coord\":{\"lon\":37.611111,\"lat\":55.796391}}," +
             "{\"country\":\"IN\",\"name\":\"Republic of India\",\"_id\":1269750,\"coord\":{\"lon\":77,\"lat\":20}}," +
             "{\"country\":\"NP\",\"name\":\"Kathmandu\",\"_id\":1283240,\"coord\":{\"lon\":85.316666,\"lat\":27.716667}}," +
+
+            // These following three are used to test filtering
             "{\"country\":\"UA\",\"name\":\"Laspi\",\"_id\":703363,\"coord\":{\"lon\":33.733334,\"lat\":44.416668}}," +
-            "{\"country\":\"VE\",\"name\":\"Merida\",\"_id\":3632308,\"coord\":{\"lon\":-71.144997,\"lat\":8.598333}}," +
-            "{\"country\":\"RU\",\"name\":\"Vinogradovo\",\"_id\":473537,\"coord\":{\"lon\":38.545555,\"lat\":55.423332}}," +
+            "{\"country\":\"UA\",\"name\":\"Lasspi\",\"_id\":703363,\"coord\":{\"lon\":33.733334,\"lat\":44.416668}}," +
+            "{\"country\":\"UA\",\"name\":\"Lassspi\",\"_id\":703363,\"coord\":{\"lon\":33.733334,\"lat\":44.416668}}," +
+
             "{\"country\":\"IQ\",\"name\":\"Qarah Gawl al \u2018Uly\u0101\",\"_id\":384848,\"coord\":{\"lon\":45.6325,\"lat\":35.353889}}," +
             "{\"country\":\"DE\",\"name\":\"Lichtenrade\",\"_id\":2878044,\"coord\":{\"lon\":13.40637,\"lat\":52.398441}}," +
             "{\"country\":\"RU\",\"name\":\"Zavety Il\u2019icha\",\"_id\":464176,\"coord\":{\"lon\":37.849998,\"lat\":56.049999}}," +
@@ -42,11 +45,11 @@ public class CityViewModelTest {
 
 
     @Test
-    public void parseCitiesTest(){
+    public void parseCitiesTest() {
 
         CityViewModel cityViewModel = new CityViewModel();
         List<CityViewModel.FilterableCity> cities = cityViewModel.parseCities(new ByteArrayInputStream(cityData.getBytes()));
-        CityViewModel.FilterableCity city = cities.get(cities.size()-1);
+        CityViewModel.FilterableCity city = cities.get(cities.size() - 1);
         assertEquals(22, cities.size());
 
         assertEquals("Hurzuf", cities.get(0).name);
@@ -54,32 +57,68 @@ public class CityViewModelTest {
         assertEquals(44.549999, cities.get(0).coord.lat);
 
 
-        assertEquals("Il\u2019ich\u00EBvka", cities.get(cities.size()-1).name);
-        assertEquals(34.383331, cities.get(cities.size()-1).coord.lon);
-        assertEquals(44.666668, cities.get(cities.size()-1).coord.lat);
+        assertEquals("Il\u2019ich\u00EBvka", cities.get(cities.size() - 1).name);
+        assertEquals(34.383331, cities.get(cities.size() - 1).coord.lon);
+        assertEquals(44.666668, cities.get(cities.size() - 1).coord.lat);
 
     }
 
     @Test
-    public void sortCitiesTest(){
+    public void sortCitiesTest() {
 
         CityViewModel cityViewModel = new CityViewModel();
         List<CityViewModel.FilterableCity> cities = cityViewModel.parseCities(new ByteArrayInputStream(cityData.getBytes()));
         cities = cityViewModel.sortCities(cities);
 
 
-        CityViewModel.FilterableCity city = cities.get(cities.size()-1);
+        CityViewModel.FilterableCity city = cities.get(cities.size() - 1);
         assertEquals("Alupka", cities.get(0).name);
         assertEquals("AA", cities.get(0).country);
 
         assertEquals("Alupka", cities.get(1).name);
         assertEquals("UA", cities.get(1).country);
 
-        assertEquals("\u2018Azriqam", cities.get(cities.size()-1).name);
+        assertEquals("\u2018Azriqam", cities.get(cities.size() - 1).name);
     }
 
     @Test
-    public void filterableCityGetNameTest(){
+    public void filterCitiesTest() {
+        CityViewModel cityViewModel = new CityViewModel();
+        List<CityViewModel.FilterableCity> cities = cityViewModel.parseCities(new ByteArrayInputStream(cityData.getBytes()));
+        cityViewModel.filteredCities.addAll(cities);
+
+        assertEquals(3, cityViewModel.filterCities("Las", cities).size());
+        assertEquals(2, cityViewModel.filterCities("Lass", cities).size());
+
+        List<CityViewModel.FilterableCity> filteredCityList = cityViewModel.filterCities("Lasss", cities);
+        assertEquals(1, filteredCityList.size());
+        assertEquals("Lassspi", filteredCityList.get(0).name);
+
+        //Case shouldn't matter
+        assertEquals(3, cityViewModel.filterCities("LAS", cities).size());
+        assertEquals(2, cityViewModel.filterCities("LaSS", cities).size());
+    }
+
+    //This test ensures that the various parts of the filtering mechanism work together
+    @Test
+    public void integrationFilterCitiesTest() {
+        CityViewModel cityViewModel = new CityViewModel();
+        cityViewModel.initFilterHandler();
+
+        cityViewModel.makeSortedCitiesFromInputStream(new ByteArrayInputStream(cityData.getBytes()));
+
+        cityViewModel.filter.set("Lasss");
+        assertEquals(1, cityViewModel.filteredCities.size());
+        assertEquals("Lassspi", cityViewModel.filteredCities.get(0).name);
+
+        //Ensure that the list is repopulated when we delete characters
+        cityViewModel.filter.set("Las");
+        assertEquals(3, cityViewModel.filteredCities.size());
+    }
+
+
+    @Test
+    public void filterableCityGetNameTest() {
         CityViewModel cityViewModel = new CityViewModel();
         CityViewModel.FilterableCity city = cityViewModel.parseCities(new ByteArrayInputStream(cityData.getBytes())).get(0);
         assertEquals(city.getDisplayName(), "Hurzuf, UA");
