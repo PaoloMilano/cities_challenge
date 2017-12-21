@@ -48,8 +48,8 @@ public class MainActivity extends AppCompatActivity {
 
         getSupportFragmentManager()
                 .beginTransaction()
-                .add(R.id.city_list_fragment_container, new CityListFragment())
-                .add(R.id.map_container, new MapFragment())
+                .replace(R.id.city_list_fragment_container, new CityListFragment())
+                .replace(R.id.map_container, new MapFragment())
                 .commit();
 
         final ActivityMainBinding binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
