@@ -17,7 +17,8 @@ public class MainActivity extends AppCompatActivity {
         final CityViewModel cityViewModel = ViewModelProviders.of(this).get(CityViewModel.class);
         cityViewModel.init(this);
 
-        getSupportFragmentManager().beginTransaction().add(R.id.city_list_fragment_container, new CityListFragment()).commit();
+        getSupportFragmentManager().beginTransaction().add(R.id.city_list_fragment_container, new MapFragment()).commit();
+//        getSupportFragmentManager().beginTransaction().add(R.id.city_list_fragment_container, new CityListFragment()).commit();
 
         final ActivityMainBinding binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
         binding.setCityViewModel(cityViewModel);

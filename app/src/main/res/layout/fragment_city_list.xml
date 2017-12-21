@@ -14,11 +14,19 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
+        <fragment
+            android:id="@+id/map"
+            android:name="com.google.android.gms.maps.SupportMapFragment"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            tools:context="com.spacitron.citiesapp.MapsActivity" />
+
         <android.support.v7.widget.RecyclerView
             android:id="@+id/recycler_view"
             bind:items="@{cityViewModel.filteredCitiesMap.get(cityViewModel.filter.get())}"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:visibility="gone"
             android:scrollbars="vertical" />
     </FrameLayout>
 </layout>
