@@ -12,10 +12,11 @@ import java.util.List;
 
 public class CityRecyclerViewAdapter extends RecyclerView.Adapter<CityRecyclerViewAdapter.CityViewHolder> {
 
-    final List<CityViewModel.FilterableCity> cities;
+    private List<City> cities;
 
-    public CityRecyclerViewAdapter(final List<CityViewModel.FilterableCity> cities) {
+    public void setItems(final List<City> cities){
         this.cities = cities;
+        notifyDataSetChanged();
     }
 
     @Override
@@ -41,6 +42,7 @@ public class CityRecyclerViewAdapter extends RecyclerView.Adapter<CityRecyclerVi
         return cities.size();
     }
 
+
     public class CityViewHolder extends RecyclerView.ViewHolder {
 
         private final CityItemBinding binding;
@@ -50,7 +52,7 @@ public class CityRecyclerViewAdapter extends RecyclerView.Adapter<CityRecyclerVi
             this.binding = binding;
         }
 
-        public void bind(CityViewModel.FilterableCity cityItem) {
+        public void bind(City cityItem) {
             binding.setCity(cityItem);
             binding.executePendingBindings();
         }
