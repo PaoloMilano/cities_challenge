@@ -4,6 +4,7 @@
     tools:context="com.spacitron.citiesapp.MainActivity">
 
     <data>
+
         <variable
             name="cityViewModel"
             type="com.spacitron.citiesapp.CityViewModel" />
@@ -20,13 +21,13 @@
             android:orientation="vertical">
 
             <EditText
-                android:id="@+id/root"
+                android:id="@+id/filter_edit"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:ems="10"
-                android:maxLines="1"
                 android:hint="@string/filter_edit_hint"
                 android:inputType="textPersonName"
+                android:maxLines="1"
                 android:text="@={cityViewModel.filter}" />
 
             <FrameLayout
@@ -40,6 +41,6 @@
             android:id="@+id/map_container"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:visibility="invisible"/>
+            android:visibility="invisible" />
     </RelativeLayout>
 </layout>

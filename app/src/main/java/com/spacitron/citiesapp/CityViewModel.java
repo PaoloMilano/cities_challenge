@@ -118,55 +118,7 @@ public class CityViewModel extends ViewModel implements OnItemSelectedListener<C
                 worker.submit(new Runnable() {
                     @Override
                     public void run() {
-
                         performFilteringStrategy();
-
-//                        // First things first, make the filter text lowercase
-//                        String filterText = filter.get().toLowerCase();
-//
-//                        // Next, caches whose name does not start with the current filter text may
-//                        // should be cleaned-up as they are not relevant right now and we don't want
-//                        // these to grow infinitely
-//                        for (String mapKey : filteredCitiesMap.keySet()) {
-//                            if (!filterText.startsWith(mapKey)) {
-//                                filteredCitiesMap.remove(mapKey);
-//                            }
-//                        }
-//
-//                        // Of course, if the map that already contains the appropriate sublist then
-//                        // we don't need to do anything. This will happen when the user deletes characters
-//                        // from the search box.
-//                        if (filteredCitiesMap.containsKey(filter.get())) {
-//                            return;
-//                        }
-//
-//                        // Next, when the filter text contains a single character, the alphabetical index
-//                        // can tell us the indexes of the sublist containing cities starting with that character.
-//                        if (filterText.length() == 1 && alphabeticalCityIndex!=null) {
-//                            char filterChar = filterText.charAt(0);
-//                            //If there's only one charcater and that's not in the index then it's clearly
-//                            // not in the list either. In that case return an empty array and exit.
-//                            if(!alphabeticalCityIndex.containsKey(filterChar)){
-//                                filteredCitiesMap.put(filterText, new ArrayList<City>());
-//                                return;
-//                            }
-//
-//                            Pair<Integer, Integer> alphabeticalIndex = alphabeticalCityIndex.get(filterChar);
-//                            filteredCitiesMap.put(filterText, citiesCache.subList(alphabeticalIndex.first, alphabeticalIndex.second));
-//                            return;
-//                        }
-//
-//
-//                        // Finally, if you still haven't found anything, take the smallest list you can find that
-//                        // contains the cities you need - there must be a cache named after the text in the previous search by now - and filter that.
-//                        if (!filterText.isEmpty()) {
-//                            for (String mapKey : filteredCitiesMap.keySet()) {
-//                                if (!mapKey.isEmpty() && filterText.startsWith(mapKey)) {
-//                                    filteredCitiesMap.put(filterText, filterCities(filterText, filteredCitiesMap.get(mapKey)));
-//                                    return;
-//                                }
-//                            }
-//                        }
                     }
                 });
             }
@@ -286,6 +238,11 @@ public class CityViewModel extends ViewModel implements OnItemSelectedListener<C
 
     @Override
     public void onItemSelected(City obj) {
+        if(selectedCity.get()!=null && selectedCity.get().equals(obj)){
+            // Do this to ensure the observers know a new selection
+            // has been made even when the city didn't change
+            selectedCity.notifyChange();
+        }
         selectedCity.set(obj);
     }
 }

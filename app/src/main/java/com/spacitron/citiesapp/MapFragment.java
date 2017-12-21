@@ -53,7 +53,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
         final City.Coordinates coordinates = city.coord;
         final LatLng position = new LatLng(coordinates.lat, coordinates.lon);
         map.clear();
-        map.addMarker(new MarkerOptions().position(position));
+        map.addMarker(new MarkerOptions().position(position).title(city.getDisplayName())).showInfoWindow();
         map.animateCamera(CameraUpdateFactory.newLatLngZoom(position, 5));
     }
 
