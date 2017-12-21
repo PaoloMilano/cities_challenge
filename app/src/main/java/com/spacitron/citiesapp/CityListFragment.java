@@ -3,7 +3,6 @@ package com.spacitron.citiesapp;
 import android.arch.lifecycle.ViewModelProviders;
 import android.databinding.BindingAdapter;
 import android.databinding.DataBindingUtil;
-import android.databinding.ObservableArrayList;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
@@ -13,6 +12,8 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.spacitron.citiesapp.databinding.FragmentCityListBinding;
+
+import java.util.List;
 
 
 public class CityListFragment extends Fragment {
@@ -33,10 +34,16 @@ public class CityListFragment extends Fragment {
         return fragmentCityListBinding.getRoot();
     }
 
+
     @BindingAdapter("bind:items")
-    public static void bindList(RecyclerView view, ObservableArrayList<CityViewModel.FilterableCity> list) {
-        final LinearLayoutManager layoutManager = new LinearLayoutManager(view.getContext());
-        view.setLayoutManager(layoutManager);
-        view.setAdapter(new CityRecyclerViewAdapter(list));
+    public static void bindList(final RecyclerView view, final List<City> list) {
+        if(view.getAdapter()==null) {
+            final LinearLayoutManager layoutManager = new LinearLayoutManager(view.getContext());
+            view.setLayoutManager(layoutManager);
+            view.setAdapter(new CityRecyclerViewAdapter());
+        }
+        if(list!=null) {
+            ((CityRecyclerViewAdapter) view.getAdapter()).setItems(list);
+        }
     }
 }

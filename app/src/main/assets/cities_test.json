@@ -2,6 +2,7 @@
 //Shorter sample to be use for test and development
 [
 {"country":"CF","name":"Boda","_id":2388614,"coord":{"lon":17.46953,"lat":4.31887}},
+{"country":"CF","name":"boda","_id":2388614,"coord":{"lon":17.46953,"lat":4.31887}},
 {"country":"CF","name":"Commune de Bangui","_id":2596686,"coord":{"lon":18.58333,"lat":4.36667}},
 {"country":"CG","name":"Mossendjo","_id":2256895,"coord":{"lon":12.72611,"lat":-2.95056}},
 {"country":"CG","name":"Loandjili","_id":2258378,"coord":{"lon":11.85778,"lat":-4.75611}},

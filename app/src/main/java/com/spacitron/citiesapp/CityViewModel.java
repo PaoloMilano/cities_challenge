@@ -3,9 +3,11 @@ package com.spacitron.citiesapp;
 import android.arch.lifecycle.ViewModel;
 import android.content.Context;
 import android.databinding.Observable;
-import android.databinding.ObservableArrayList;
+import android.databinding.ObservableArrayMap;
 import android.databinding.ObservableBoolean;
 import android.databinding.ObservableField;
+import android.databinding.ObservableMap;
+import android.support.v4.util.Pair;
 
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -17,31 +19,35 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 
 public class CityViewModel extends ViewModel {
 
-    private final ArrayList<FilterableCity> citiesCache;
-    private String lastFilterString;
+    protected final ArrayList<City> citiesCache;
 
     public final ObservableBoolean isLoading;
-    public final ObservableArrayList<FilterableCity> filteredCities;
     public final ObservableField<String> filter;
+    public final ObservableMap<String, List<City>> filteredCitiesMap;
 
-    private Future futureTask;
-    private final ExecutorService worker = Executors.newSingleThreadExecutor();
+    private Map<Character, Pair<Integer, Integer>> alphabeticalCityIndex;
+    private final ExecutorService worker = Executors.newFixedThreadPool(5);
 
 
     public CityViewModel() {
         isLoading = new ObservableBoolean();
-        filteredCities = new ObservableArrayList<>();
+
         filter = new ObservableField<>();
+        filter.set(new String());
+
         citiesCache = new ArrayList<>();
-        lastFilterString = new String();
+
+        filteredCitiesMap = new ObservableArrayMap<>();
+        filteredCitiesMap.put(filter.get(), citiesCache);
     }
 
     public void init(final Context context) {
@@ -53,12 +59,37 @@ public class CityViewModel extends ViewModel {
 
                     // Get the InputStream here so you don't need to pass context to other methods
                     makeSortedCitiesFromInputStream(context.getAssets().open("cities.json"));
+                    alphabeticalCityIndex = getAlphabeticalCityIndex(citiesCache);
 
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
         }).start();
+    }
+
+
+    protected Map<Character, Pair<Integer, Integer>> getAlphabeticalCityIndex(final List<City> indexableCities){
+
+        Character firstLetter = null;
+        int startIndex = 0;
+
+        final Map<Character, Pair<Integer, Integer>> alphabeticalIndex = new HashMap<>();
+
+        for (City indexableCity : indexableCities) {
+
+            char indexableCharacter = indexableCity.getLowerCaseDisplayName().charAt(0);
+
+            if (firstLetter == null) {
+                firstLetter = indexableCharacter;
+
+            } else if (!firstLetter.equals(indexableCharacter)) {
+                alphabeticalIndex.put(firstLetter, new Pair<>(startIndex, indexableCities.indexOf(indexableCity)));
+                firstLetter = indexableCharacter;
+                startIndex = indexableCities.indexOf(indexableCity);
+            }
+        }
+        return alphabeticalIndex;
     }
 
     /**
@@ -68,28 +99,62 @@ public class CityViewModel extends ViewModel {
 
         //Store the full list in a local variable and set the initial state
         citiesCache.addAll(sortCities(parseCities(inputStream)));
+        filteredCitiesMap.put(filter.get(), filterCities(filter.get(), citiesCache));
 
-        //Initialise filter parsing
-        filteredCities.addAll(filterCities(filter.get(), citiesCache));
+        // This filters the city entries as the filter text changes.
         filter.addOnPropertyChangedCallback(new Observable.OnPropertyChangedCallback() {
             @Override
             public void onPropertyChanged(Observable observable, int i) {
 
-                // If the user types faster than we can filter just stop the previous execution and start a new filter task
-                if(futureTask!=null && !futureTask.isDone()) {
-                    futureTask.cancel(true);
-                }
-
-                futureTask = worker.submit(new Runnable() {
+                worker.submit(new Runnable() {
                     @Override
                     public void run() {
 
-                        final List<FilterableCity> filterableCities = filterCities(filter.get(), citiesCache);
+                        // First things first, make the filter text lowercase
+                        String filterText = filter.get().toLowerCase();
 
-                        //As this will is managed by a worker thread make sure you skip this
-                        if(!Thread.interrupted()) {
-                            filteredCities.clear();
-                            filteredCities.addAll(filterableCities);
+                        // Next, caches whose name does not start with the current filter text may
+                        // should be cleaned-up as they are not relevant right now and we don't want
+                        // these to grow infinitely
+                        for (String mapKey : filteredCitiesMap.keySet()) {
+                            if (!filterText.startsWith(mapKey)) {
+                                filteredCitiesMap.remove(mapKey);
+                            }
+                        }
+
+                        // Of course, if the map that already contains the appropriate sublist then
+                        // we don't need to do anything. This will happen when the user deletes characters
+                        // from the search box.
+                        if (filteredCitiesMap.containsKey(filter.get())) {
+                            return;
+                        }
+
+                        // Next, when the filter text contains a single character, the alphabetical index
+                        // can tell us the indexes of the sublist containing cities starting with that character.
+                        if (filterText.length() == 1 && alphabeticalCityIndex!=null) {
+                            char filterChar = filterText.charAt(0);
+                            //If there's only one charcater and that's not in the index then it's clearly
+                            // not in the list either. In that case return an empty array and exit.
+                            if(!alphabeticalCityIndex.containsKey(filterChar)){
+                                filteredCitiesMap.put(filterText, new ArrayList<City>());
+                                return;
+                            }
+
+                            Pair<Integer, Integer> alphabeticalIndex = alphabeticalCityIndex.get(filterChar);
+                            filteredCitiesMap.put(filterText, citiesCache.subList(alphabeticalIndex.first, alphabeticalIndex.second));
+                            return;
+                        }
+
+
+                        // Finally, if you still haven't found anything, take the smallest list you can find that
+                        // contains the cities you need - there must be a cache named after the text in the previous search by now - and filter that.
+                        if (!filterText.isEmpty()) {
+                            for (String mapKey : filteredCitiesMap.keySet()) {
+                                if (!mapKey.isEmpty() && filterText.startsWith(mapKey)) {
+                                    filteredCitiesMap.put(filterText, filterCities(filterText, filteredCitiesMap.get(mapKey)));
+                                    return;
+                                }
+                            }
                         }
                     }
                 });
@@ -97,34 +162,43 @@ public class CityViewModel extends ViewModel {
         });
     }
 
+    protected List<City> filterCities(String filterString, List<City> cities) {
 
-    protected List<FilterableCity> filterCities(String filterString, List<FilterableCity> cities) {
-
-        //If we have nothing to filter with there's no point going any further
-        if (filterString == null || filterString.isEmpty()) {
+        //If we have nothing to filter with there's we can stop here
+        if (filterString == null || filterString.isEmpty() || cities.isEmpty()) {
             return cities;
         }
 
-        List<FilterableCity> result = new ArrayList<>();
-        for (FilterableCity city : cities) {
+        List<City> result = new ArrayList<>();
+
+        //Keep track of when you start matching so you can break out of the
+        //loop as soon as that's done to save cycles.
+        boolean filterStarted = false;
+
+        for (City city : cities) {
 
             //As this will is managed by a worker thread make sure you stop executing if the work is no longer needed.
-            if(Thread.interrupted()){
+            if (Thread.interrupted()) {
                 break;
             }
-            if (city.getDisplayName().toLowerCase().startsWith(filterString.toLowerCase())) {
+            if (city.getLowerCaseDisplayName().startsWith(filterString.toLowerCase())) {
                 result.add(city);
+                if(!filterStarted){
+                    filterStarted = true;
+                }
+            }else if(filterStarted){
+                break;
             }
         }
         return result;
     }
 
-    protected List<FilterableCity> parseCities(final InputStream inputStream) {
+    protected List<City> parseCities(final InputStream inputStream) {
         final BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
 
-        final List<FilterableCity> result = new GsonBuilder()
+        final List<City> result = new GsonBuilder()
                 .create()
-                .fromJson(reader, new TypeToken<List<FilterableCity>>() {
+                .fromJson(reader, new TypeToken<List<City>>() {
                 }.getType());
 
         // There may be null entries at the end of this. Make sure those are removed.
@@ -139,29 +213,14 @@ public class CityViewModel extends ViewModel {
     }
 
 
-    protected List<FilterableCity> sortCities(final List<FilterableCity> cities) {
-        Collections.sort(cities, new Comparator<FilterableCity>() {
+    protected List<City> sortCities(final List<City> cities) {
+        Collections.sort(cities, new Comparator<City>() {
             @Override
-            public int compare(FilterableCity o1, FilterableCity o2) {
-                return o1.getDisplayName().compareTo(o2.getDisplayName());
+            public int compare(City o1, City o2) {
+                return o1.getLowerCaseDisplayName().compareTo(o2.getLowerCaseDisplayName());
             }
         });
 
         return cities;
-    }
-
-    public class FilterableCity extends City {
-
-        private String displayName;
-
-        public String getDisplayName() {
-
-            //Lazy compute property even though in this ViewModel it will be called almost immediately.
-            if (displayName == null) {
-                displayName = String.format("%s, %s", name, country);
-            }
-            return displayName;
-        }
-
     }
 }
