@@ -41,6 +41,8 @@ public class CityViewModel extends ViewModel implements OnItemSelectedListener<C
     private Map<Character, Pair<Integer, Integer>> alphabeticalCityIndex;
     private final ExecutorService worker = Executors.newFixedThreadPool(5);
 
+    private boolean isInitialized;
+
 
     public CityViewModel() {
         isLoading = new ObservableBoolean();
@@ -50,9 +52,21 @@ public class CityViewModel extends ViewModel implements OnItemSelectedListener<C
 
         filteredCitiesMap = new ObservableArrayMap<>();
         selectedCity = new ObservableField<>();
+        isInitialized = false;
     }
 
     public void init(final Context context) {
+
+        // Keep track of whether this was alrady initialised so you don't end up reading the same data
+        // for every configuration change. We could also extend AndroidViewModel to do this but
+        // I'd rather limit the dependencies on Android as much as possible here
+        if(isInitialized){
+           return;
+        }
+        isInitialized = true;
+
+        isLoading.set(true);
+
         // This should not be stopped until it completes so use a throwaway thread when first subscribing
         new Thread(new Runnable() {
             @Override
@@ -62,6 +76,8 @@ public class CityViewModel extends ViewModel implements OnItemSelectedListener<C
                     // Get the InputStream here so you don't need to pass context to other methods
                     makeSortedCitiesFromInputStream(context.getAssets().open("cities_test.json"));
                     alphabeticalCityIndex = getAlphabeticalCityIndex(filteredCitiesMap.get(EMPTY_KEY));
+
+                    isLoading.set(false);
 
                 } catch (IOException e) {
                     e.printStackTrace();

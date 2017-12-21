@@ -10,9 +10,9 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/fadedColorPrimary"
         android:orientation="vertical"
         android:clipToPadding="false"
+        android:background="?selectableItemBackground"
         android:onClick="@{()-> city.select()}"
         android:padding="@dimen/quarter_standard_margin">
 
