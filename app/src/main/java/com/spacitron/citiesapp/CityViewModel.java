@@ -103,10 +103,10 @@ public class CityViewModel extends ViewModel implements OnItemSelectedListener<C
      */
     protected void makeSortedCitiesFromInputStream(final InputStream inputStream) {
 
-        //Store the full list with the default, empty key
+        //Store the full list with the default empty key
         filteredCitiesMap.put(EMPTY_KEY, sortCities(parseCities(inputStream)));
 
-        //Then check if a filter has already been set while the data was being loaded
+        //Then check if a filter has already been set while the data was loading
         performFilteringStrategy();
 
 
@@ -172,6 +172,10 @@ public class CityViewModel extends ViewModel implements OnItemSelectedListener<C
                 }
             }
         }
+
+        //If all else fails then parse the whole list. This will happen if the user types more than one
+        //character at once, for example by copypasting text from elsewhere.
+        filteredCitiesMap.put(filterText, filterCitiesByStartingString(filterText, filteredCitiesMap.get(EMPTY_KEY)));
     }
 
     protected List<City> filterCitiesByStartingString(String filterString, List<City> cities) {

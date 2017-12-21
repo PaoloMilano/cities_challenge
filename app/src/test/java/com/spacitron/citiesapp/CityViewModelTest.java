@@ -1,5 +1,6 @@
 package com.spacitron.citiesapp;
 
+import android.databinding.Observable;
 import android.support.v4.util.Pair;
 
 import org.junit.Test;
@@ -100,19 +101,19 @@ public class CityViewModelTest {
             e.printStackTrace();
         }
 
-        assertEquals(3, cityViewModel.filterCities("las", cityViewModel.citiesCache).size());
-        assertEquals(2, cityViewModel.filterCities("lass",  cityViewModel.citiesCache).size());
+        assertEquals(3, cityViewModel.filterCitiesByStartingString("las", cityViewModel.filteredCitiesMap.get(CityViewModel.EMPTY_KEY)).size());
+        assertEquals(2, cityViewModel.filterCitiesByStartingString("lass", cityViewModel.filteredCitiesMap.get(CityViewModel.EMPTY_KEY)).size());
 
-        List<City> filteredCityList = cityViewModel.filterCities("lasss",  cityViewModel.citiesCache);
+        List<City> filteredCityList = cityViewModel.filterCitiesByStartingString("lasss", cityViewModel.filteredCitiesMap.get(CityViewModel.EMPTY_KEY));
         assertEquals(1, filteredCityList.size());
         assertEquals("Lassspi", filteredCityList.get(0).name);
 
         //Case shouldn't matter
-        assertEquals(3, cityViewModel.filterCities("LAS",  cityViewModel.citiesCache).size());
-        assertEquals(2, cityViewModel.filterCities("LaSS",  cityViewModel.citiesCache).size());
+        assertEquals(3, cityViewModel.filterCitiesByStartingString("LAS", cityViewModel.filteredCitiesMap.get(CityViewModel.EMPTY_KEY)).size());
+        assertEquals(2, cityViewModel.filterCitiesByStartingString("LaSS", cityViewModel.filteredCitiesMap.get(CityViewModel.EMPTY_KEY)).size());
 
         //Empty for non-matching word
-        assertEquals(0, cityViewModel.filterCities("bs65uyvt567gu",  cityViewModel.citiesCache).size());
+        assertEquals(0, cityViewModel.filterCitiesByStartingString("bs65uyvt567gu", cityViewModel.filteredCitiesMap.get(CityViewModel.EMPTY_KEY)).size());
     }
 
     //This test ensures that the various parts of the filtering mechanism work together
@@ -156,7 +157,7 @@ public class CityViewModelTest {
 
 
     @Test
-    public void buildAlphabeticalIndexTest(){
+    public void buildAlphabeticalIndexTest() {
         CityViewModel cityViewModel = new CityViewModel();
         List<City> cities = cityViewModel.parseCities(new ByteArrayInputStream(cityData.getBytes()));
         Map<Character, Pair<Integer, Integer>> citiesIndex = cityViewModel.getAlphabeticalCityIndex(cities);
@@ -167,5 +168,40 @@ public class CityViewModelTest {
 
         //There should be 2 'k'
         assertEquals(2, citiesIndex.get('k').second - citiesIndex.get('k').first);
+    }
+
+    @Test
+    public void testItemSelectionWhenCityIsUnchanged() {
+        CityViewModel cityViewModel = new CityViewModel();
+
+        TestCallBack callback = new TestCallBack();
+
+        cityViewModel.selectedCity.addOnPropertyChangedCallback(callback);
+
+        City city = new City();
+        city.name = "Philadelphia";
+        city.country = "USA";
+        city._id = -1;
+        city.coord = new City.Coordinates();
+
+        //First hit, the field should have been set
+        cityViewModel.onItemSelected(city);
+        assertEquals(1, callback.hitCounter);
+
+        //Second hit, although the field should have not been set, observers
+        // should have been notified regardless
+        cityViewModel.onItemSelected(city);
+        assertEquals(2, callback.hitCounter);
+    }
+
+
+    static  class TestCallBack extends Observable.OnPropertyChangedCallback{
+
+        public int hitCounter = 0;
+
+        @Override
+        public void onPropertyChanged(Observable observable, int i) {
+            hitCounter++;
+        }
     }
 }
