@@ -1,7 +1,4 @@
 <resources>
     <string name="app_name">CitiesApp</string>
-
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
-    <string name="title_activity_maps">Map</string>
+    <string name="filter_edit_hint"><font size="16">Hello there, try typing in this box...</font></string>
 </resources>

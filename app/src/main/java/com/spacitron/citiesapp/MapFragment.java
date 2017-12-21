@@ -24,7 +24,9 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
     @Override
     public void onCreate(Bundle bundle) {
         super.onCreate(bundle);
-        getMapAsync(this);
+        if(map==null) {
+            getMapAsync(this);
+        }
     }
 
 
@@ -47,14 +49,12 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
         });
     }
 
-    //TODO see if you need the city otherwise only pass coords
     private void moveToCity(final City city){
         final City.Coordinates coordinates = city.coord;
-        final LatLng sydney = new LatLng(coordinates.lat, coordinates.lon);
-
-        //TODO see if you can do anything with the marker
-        map.addMarker(new MarkerOptions().position(sydney));
-        map.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+        final LatLng position = new LatLng(coordinates.lat, coordinates.lon);
+        map.clear();
+        map.addMarker(new MarkerOptions().position(position));
+        map.animateCamera(CameraUpdateFactory.newLatLngZoom(position, 5));
     }
 
 }
