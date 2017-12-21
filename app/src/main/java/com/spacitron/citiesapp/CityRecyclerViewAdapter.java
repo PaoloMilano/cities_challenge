@@ -7,6 +7,7 @@ import android.view.ViewGroup;
 
 import com.spacitron.citiesapp.databinding.CityItemBinding;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -14,8 +15,13 @@ public class CityRecyclerViewAdapter extends RecyclerView.Adapter<CityRecyclerVi
 
     private List<City> cities;
 
+    public CityRecyclerViewAdapter(){
+        cities = new ArrayList<>();
+    }
+
     public void setItems(final List<City> cities){
-        this.cities = cities;
+        this.cities.clear();
+        this.cities.addAll(cities);
         notifyDataSetChanged();
     }
 

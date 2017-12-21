@@ -13,6 +13,7 @@
         android:background="@color/fadedColorPrimary"
         android:orientation="vertical"
         android:clipToPadding="false"
+        android:onClick="@{()-> city.select()}"
         android:padding="@dimen/quarter_standard_margin">
 
         <TextView

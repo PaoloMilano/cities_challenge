@@ -11,6 +11,7 @@ import android.support.v4.util.Pair;
 
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
+import com.spacitron.citiesapp.utils.OnItemSelectedListener;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -26,12 +27,15 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 
-public class CityViewModel extends ViewModel {
+public class CityViewModel extends ViewModel implements OnItemSelectedListener<City>{
 
-    protected final ArrayList<City> citiesCache;
+    // Empty key - corresponding to an empty string - this will be used to mark the initial
+    //cache containing the complete, unfiltered list of cities.
+    public static final String EMPTY_KEY = new String();
 
     public final ObservableBoolean isLoading;
     public final ObservableField<String> filter;
+    public final ObservableField<City> selectedCity;
     public final ObservableMap<String, List<City>> filteredCitiesMap;
 
     private Map<Character, Pair<Integer, Integer>> alphabeticalCityIndex;
@@ -42,12 +46,10 @@ public class CityViewModel extends ViewModel {
         isLoading = new ObservableBoolean();
 
         filter = new ObservableField<>();
-        filter.set(new String());
-
-        citiesCache = new ArrayList<>();
+        filter.set(EMPTY_KEY);
 
         filteredCitiesMap = new ObservableArrayMap<>();
-        filteredCitiesMap.put(filter.get(), citiesCache);
+        selectedCity = new ObservableField<>();
     }
 
     public void init(final Context context) {
@@ -58,8 +60,8 @@ public class CityViewModel extends ViewModel {
                 try {
 
                     // Get the InputStream here so you don't need to pass context to other methods
-                    makeSortedCitiesFromInputStream(context.getAssets().open("cities.json"));
-                    alphabeticalCityIndex = getAlphabeticalCityIndex(citiesCache);
+                    makeSortedCitiesFromInputStream(context.getAssets().open("cities_test.json"));
+                    alphabeticalCityIndex = getAlphabeticalCityIndex(filteredCitiesMap.get(EMPTY_KEY));
 
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -88,6 +90,10 @@ public class CityViewModel extends ViewModel {
                 firstLetter = indexableCharacter;
                 startIndex = indexableCities.indexOf(indexableCity);
             }
+
+            // Doesn't feel right to do this here but I certainly also
+            // don't want to loop all the cities again
+            indexableCity.itemSelectedListener = this;
         }
         return alphabeticalIndex;
     }
@@ -97,9 +103,12 @@ public class CityViewModel extends ViewModel {
      */
     protected void makeSortedCitiesFromInputStream(final InputStream inputStream) {
 
-        //Store the full list in a local variable and set the initial state
-        citiesCache.addAll(sortCities(parseCities(inputStream)));
-        filteredCitiesMap.put(filter.get(), filterCities(filter.get(), citiesCache));
+        //Store the full list with the default, empty key
+        filteredCitiesMap.put(EMPTY_KEY, sortCities(parseCities(inputStream)));
+
+        //Then check if a filter has already been set while the data was being loaded
+        performFilteringStrategy();
+
 
         // This filters the city entries as the filter text changes.
         filter.addOnPropertyChangedCallback(new Observable.OnPropertyChangedCallback() {
@@ -110,59 +119,110 @@ public class CityViewModel extends ViewModel {
                     @Override
                     public void run() {
 
-                        // First things first, make the filter text lowercase
-                        String filterText = filter.get().toLowerCase();
+                        performFilteringStrategy();
 
-                        // Next, caches whose name does not start with the current filter text may
-                        // should be cleaned-up as they are not relevant right now and we don't want
-                        // these to grow infinitely
-                        for (String mapKey : filteredCitiesMap.keySet()) {
-                            if (!filterText.startsWith(mapKey)) {
-                                filteredCitiesMap.remove(mapKey);
-                            }
-                        }
-
-                        // Of course, if the map that already contains the appropriate sublist then
-                        // we don't need to do anything. This will happen when the user deletes characters
-                        // from the search box.
-                        if (filteredCitiesMap.containsKey(filter.get())) {
-                            return;
-                        }
-
-                        // Next, when the filter text contains a single character, the alphabetical index
-                        // can tell us the indexes of the sublist containing cities starting with that character.
-                        if (filterText.length() == 1 && alphabeticalCityIndex!=null) {
-                            char filterChar = filterText.charAt(0);
-                            //If there's only one charcater and that's not in the index then it's clearly
-                            // not in the list either. In that case return an empty array and exit.
-                            if(!alphabeticalCityIndex.containsKey(filterChar)){
-                                filteredCitiesMap.put(filterText, new ArrayList<City>());
-                                return;
-                            }
-
-                            Pair<Integer, Integer> alphabeticalIndex = alphabeticalCityIndex.get(filterChar);
-                            filteredCitiesMap.put(filterText, citiesCache.subList(alphabeticalIndex.first, alphabeticalIndex.second));
-                            return;
-                        }
-
-
-                        // Finally, if you still haven't found anything, take the smallest list you can find that
-                        // contains the cities you need - there must be a cache named after the text in the previous search by now - and filter that.
-                        if (!filterText.isEmpty()) {
-                            for (String mapKey : filteredCitiesMap.keySet()) {
-                                if (!mapKey.isEmpty() && filterText.startsWith(mapKey)) {
-                                    filteredCitiesMap.put(filterText, filterCities(filterText, filteredCitiesMap.get(mapKey)));
-                                    return;
-                                }
-                            }
-                        }
+//                        // First things first, make the filter text lowercase
+//                        String filterText = filter.get().toLowerCase();
+//
+//                        // Next, caches whose name does not start with the current filter text may
+//                        // should be cleaned-up as they are not relevant right now and we don't want
+//                        // these to grow infinitely
+//                        for (String mapKey : filteredCitiesMap.keySet()) {
+//                            if (!filterText.startsWith(mapKey)) {
+//                                filteredCitiesMap.remove(mapKey);
+//                            }
+//                        }
+//
+//                        // Of course, if the map that already contains the appropriate sublist then
+//                        // we don't need to do anything. This will happen when the user deletes characters
+//                        // from the search box.
+//                        if (filteredCitiesMap.containsKey(filter.get())) {
+//                            return;
+//                        }
+//
+//                        // Next, when the filter text contains a single character, the alphabetical index
+//                        // can tell us the indexes of the sublist containing cities starting with that character.
+//                        if (filterText.length() == 1 && alphabeticalCityIndex!=null) {
+//                            char filterChar = filterText.charAt(0);
+//                            //If there's only one charcater and that's not in the index then it's clearly
+//                            // not in the list either. In that case return an empty array and exit.
+//                            if(!alphabeticalCityIndex.containsKey(filterChar)){
+//                                filteredCitiesMap.put(filterText, new ArrayList<City>());
+//                                return;
+//                            }
+//
+//                            Pair<Integer, Integer> alphabeticalIndex = alphabeticalCityIndex.get(filterChar);
+//                            filteredCitiesMap.put(filterText, citiesCache.subList(alphabeticalIndex.first, alphabeticalIndex.second));
+//                            return;
+//                        }
+//
+//
+//                        // Finally, if you still haven't found anything, take the smallest list you can find that
+//                        // contains the cities you need - there must be a cache named after the text in the previous search by now - and filter that.
+//                        if (!filterText.isEmpty()) {
+//                            for (String mapKey : filteredCitiesMap.keySet()) {
+//                                if (!mapKey.isEmpty() && filterText.startsWith(mapKey)) {
+//                                    filteredCitiesMap.put(filterText, filterCities(filterText, filteredCitiesMap.get(mapKey)));
+//                                    return;
+//                                }
+//                            }
+//                        }
                     }
                 });
             }
         });
     }
 
-    protected List<City> filterCities(String filterString, List<City> cities) {
+    protected void performFilteringStrategy(){
+        // First things first, make the filter text lowercase
+        String filterText = filter.get().toLowerCase();
+
+        // Next, caches whose name does not start with the current filter text may
+        // should be cleaned-up as they are not relevant right now and we don't want
+        // these to grow infinitely
+        for (String mapKey : filteredCitiesMap.keySet()) {
+            if (!filterText.startsWith(mapKey)) {
+                filteredCitiesMap.remove(mapKey);
+            }
+        }
+
+        // Of course, if the map that already contains the appropriate sublist then
+        // we don't need to do anything. This will happen when the user deletes characters
+        // from the search box.
+        if (filteredCitiesMap.containsKey(filter.get())) {
+            return;
+        }
+
+        // Next, when the filter text contains a single character, the alphabetical index
+        // can tell us the indexes of the sublist containing cities starting with that character.
+        if (filterText.length() == 1 && alphabeticalCityIndex!=null) {
+            char filterChar = filterText.charAt(0);
+            //If there's only one charcater and that's not in the index then it's clearly
+            // not in the list either. In that case return an empty array and exit.
+            if(!alphabeticalCityIndex.containsKey(filterChar)){
+                filteredCitiesMap.put(filterText, new ArrayList<City>());
+                return;
+            }
+
+            Pair<Integer, Integer> alphabeticalIndex = alphabeticalCityIndex.get(filterChar);
+            filteredCitiesMap.put(filterText, filteredCitiesMap.get(EMPTY_KEY).subList(alphabeticalIndex.first, alphabeticalIndex.second));
+            return;
+        }
+
+
+        // Finally, if you still haven't found anything, take the smallest list you can find that
+        // contains the cities you need - there must be a cache named after the text in the previous search by now - and filter that.
+        if (!filterText.isEmpty()) {
+            for (String mapKey : filteredCitiesMap.keySet()) {
+                if (!mapKey.isEmpty() && filterText.startsWith(mapKey)) {
+                    filteredCitiesMap.put(filterText, filterCitiesByStartingString(filterText, filteredCitiesMap.get(mapKey)));
+                    return;
+                }
+            }
+        }
+    }
+
+    protected List<City> filterCitiesByStartingString(String filterString, List<City> cities) {
 
         //If we have nothing to filter with there's we can stop here
         if (filterString == null || filterString.isEmpty() || cities.isEmpty()) {
@@ -222,5 +282,10 @@ public class CityViewModel extends ViewModel {
         });
 
         return cities;
+    }
+
+    @Override
+    public void onItemSelected(City obj) {
+        selectedCity.set(obj);
     }
 }

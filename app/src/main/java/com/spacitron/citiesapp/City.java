@@ -1,5 +1,7 @@
 package com.spacitron.citiesapp;
 
+import com.spacitron.citiesapp.utils.OnItemSelectedListener;
+
 public class City {
 
     private String displayName;
@@ -13,6 +15,15 @@ public class City {
         public double lon;
         public double lat;
     }
+
+    protected OnItemSelectedListener<City> itemSelectedListener;
+
+    public void select(){
+        if(itemSelectedListener!=null) {
+            itemSelectedListener.onItemSelected(this);
+        }
+    }
+
 
     protected String getLowerCaseDisplayName(){
         return getDisplayName().toLowerCase();
