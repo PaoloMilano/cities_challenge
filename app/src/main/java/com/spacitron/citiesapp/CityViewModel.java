@@ -8,6 +8,7 @@ import android.databinding.ObservableBoolean;
 import android.databinding.ObservableField;
 import android.databinding.ObservableMap;
 import android.support.v4.util.Pair;
+import android.util.Log;
 
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -23,11 +24,12 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 
-public class CityViewModel extends ViewModel implements OnItemSelectedListener<City>{
+public class CityViewModel extends ViewModel implements OnItemSelectedListener<City> {
 
     // Empty key - corresponding to an empty string - this will be used to mark the initial
     //cache containing the complete, unfiltered list of cities.
@@ -38,11 +40,10 @@ public class CityViewModel extends ViewModel implements OnItemSelectedListener<C
     public final ObservableField<City> selectedCity;
     public final ObservableMap<String, List<City>> filteredCitiesMap;
 
-    private Map<Character, Pair<Integer, Integer>> alphabeticalCityIndex;
-    private final ExecutorService worker = Executors.newFixedThreadPool(5);
+    protected Map<Character, Pair<Integer, Integer>> alphabeticalCityIndex;
+    private final ExecutorService worker = Executors.newFixedThreadPool(10);
 
     private boolean isInitialized;
-
 
     public CityViewModel() {
         isLoading = new ObservableBoolean();
@@ -55,39 +56,98 @@ public class CityViewModel extends ViewModel implements OnItemSelectedListener<C
         isInitialized = false;
     }
 
-    public void init(final Context context) {
+    public void init(final Context context, final String... fileNames) {
 
         // Keep track of whether this was alrady initialised so you don't end up reading the same data
         // for every configuration change. We could also extend AndroidViewModel to do this but
         // I'd rather limit the dependencies on Android as much as possible here
-        if(isInitialized){
-           return;
+        if (isInitialized) {
+            return;
         }
         isInitialized = true;
 
-        isLoading.set(true);
-
-        // This should not be stopped until it completes so use a throwaway thread when first subscribing
+        // This should not be stopped until it completes so use a throwaway thread when initializing
         new Thread(new Runnable() {
             @Override
             public void run() {
-                try {
 
-                    // Get the InputStream here so you don't need to pass context to other methods
-                    makeSortedCitiesFromInputStream(context.getAssets().open("cities_test.json"));
-                    alphabeticalCityIndex = getAlphabeticalCityIndex(filteredCitiesMap.get(EMPTY_KEY));
+                //Let clients know that we're doing something
+                isLoading.set(true);
 
-                    isLoading.set(false);
+                InputStream[] cityFilesStreams = new InputStream[fileNames.length];
 
-                } catch (IOException e) {
-                    e.printStackTrace();
+                for (int i = 0; i < fileNames.length; i++) {
+                    try {
+                        cityFilesStreams[i] = context.getAssets().open(fileNames[i]);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
+                makeSortedCitiesFromInputStreams(cityFilesStreams);
+
+                //Now we're good to go
+                isLoading.set(false);
             }
         }).start();
     }
 
+    /**
+     * Expose functionality separately so this can be called synchronously in tests
+     */
+    protected void makeSortedCitiesFromInputStreams(final InputStream... inputStreams) {
 
-    protected Map<Character, Pair<Integer, Integer>> getAlphabeticalCityIndex(final List<City> indexableCities){
+        final CountDownLatch doneSignal = new CountDownLatch(inputStreams.length);
+
+        final List<City> cities = new ArrayList<>();
+
+        for (final InputStream inputStream : inputStreams) {
+
+            worker.submit(new Runnable() {
+                @Override
+                public void run() {
+                    cities.addAll(parseCities(inputStream));
+                    doneSignal.countDown();
+                }
+            });
+        }
+
+        try {
+            //This is happening in a separate thread so we can wait without problem
+            doneSignal.await();
+        } catch (InterruptedException e) {
+            Log.e("CitiesApp", e.getLocalizedMessage());
+        }
+
+        //Store the full list with the default empty key
+        final List<City> sortedCities = sortCities(cities);
+
+        //This may be a costly but it has to happen at some point or another
+        alphabeticalCityIndex = getAlphabeticalCityIndex(sortedCities);
+
+        // Do this as late as possible so we don't accidentally emit data while being in a loading state
+        filteredCitiesMap.put(EMPTY_KEY, sortedCities);
+
+        //Then check if a filter has already been set while the data was loading
+        performFilteringStrategy();
+
+
+        // This filters the city entries as the filter text changes.
+        filter.addOnPropertyChangedCallback(new Observable.OnPropertyChangedCallback() {
+            @Override
+            public void onPropertyChanged(Observable observable, int i) {
+
+                worker.submit(new Runnable() {
+                    @Override
+                    public void run() {
+                        performFilteringStrategy();
+                    }
+                });
+            }
+        });
+    }
+
+
+    protected Map<Character, Pair<Integer, Integer>> getAlphabeticalCityIndex(final List<City> indexableCities) {
 
         Character firstLetter = null;
         int startIndex = 0;
@@ -114,34 +174,8 @@ public class CityViewModel extends ViewModel implements OnItemSelectedListener<C
         return alphabeticalIndex;
     }
 
-    /**
-     * Expose functionality separately so this can be calles synchronously in tests
-     */
-    protected void makeSortedCitiesFromInputStream(final InputStream inputStream) {
 
-        //Store the full list with the default empty key
-        filteredCitiesMap.put(EMPTY_KEY, sortCities(parseCities(inputStream)));
-
-        //Then check if a filter has already been set while the data was loading
-        performFilteringStrategy();
-
-
-        // This filters the city entries as the filter text changes.
-        filter.addOnPropertyChangedCallback(new Observable.OnPropertyChangedCallback() {
-            @Override
-            public void onPropertyChanged(Observable observable, int i) {
-
-                worker.submit(new Runnable() {
-                    @Override
-                    public void run() {
-                        performFilteringStrategy();
-                    }
-                });
-            }
-        });
-    }
-
-    protected void performFilteringStrategy(){
+    protected void performFilteringStrategy() {
         // First things first, make the filter text lowercase
         String filterText = filter.get().toLowerCase();
 
@@ -163,11 +197,11 @@ public class CityViewModel extends ViewModel implements OnItemSelectedListener<C
 
         // Next, when the filter text contains a single character, the alphabetical index
         // can tell us the indexes of the sublist containing cities starting with that character.
-        if (filterText.length() == 1 && alphabeticalCityIndex!=null) {
+        if (filterText.length() == 1 && alphabeticalCityIndex != null) {
             char filterChar = filterText.charAt(0);
             //If there's only one charcater and that's not in the index then it's clearly
             // not in the list either. In that case return an empty array and exit.
-            if(!alphabeticalCityIndex.containsKey(filterChar)){
+            if (!alphabeticalCityIndex.containsKey(filterChar)) {
                 filteredCitiesMap.put(filterText, new ArrayList<City>());
                 return;
             }
@@ -189,9 +223,21 @@ public class CityViewModel extends ViewModel implements OnItemSelectedListener<C
             }
         }
 
-        //If all else fails then parse the whole list. This will happen if the user types more than one
-        //character at once, for example by copypasting text from elsewhere.
-        filteredCitiesMap.put(filterText, filterCitiesByStartingString(filterText, filteredCitiesMap.get(EMPTY_KEY)));
+        // This will execute if the user types more than one character at once,
+        // in the empty field. In that case we must still have an index for the first characted
+        // of the sequence so we can use that to speedup filtering;
+        final char filterInitial = filterText.charAt(0);
+        if (filteredCitiesMap.containsKey(filterInitial)) {
+
+            final Pair<Integer, Integer> alphabeticalIndex = alphabeticalCityIndex.get(filterInitial);
+            filteredCitiesMap.put(filterText, filterCitiesByStartingString(filterText, filteredCitiesMap.get(EMPTY_KEY).subList(alphabeticalIndex.first, alphabeticalIndex.second)));
+
+        } else {
+
+            // Finally if nothing was found return an empty list
+            filteredCitiesMap.put(filterText, new ArrayList<City>());
+
+        }
     }
 
     protected List<City> filterCitiesByStartingString(String filterString, List<City> cities) {
@@ -215,10 +261,10 @@ public class CityViewModel extends ViewModel implements OnItemSelectedListener<C
             }
             if (city.getLowerCaseDisplayName().startsWith(filterString.toLowerCase())) {
                 result.add(city);
-                if(!filterStarted){
+                if (!filterStarted) {
                     filterStarted = true;
                 }
-            }else if(filterStarted){
+            } else if (filterStarted) {
                 break;
             }
         }
@@ -246,6 +292,9 @@ public class CityViewModel extends ViewModel implements OnItemSelectedListener<C
 
 
     protected List<City> sortCities(final List<City> cities) {
+
+        cities.removeAll(Collections.singleton(null));
+
         Collections.sort(cities, new Comparator<City>() {
             @Override
             public int compare(City o1, City o2) {
@@ -258,7 +307,7 @@ public class CityViewModel extends ViewModel implements OnItemSelectedListener<C
 
     @Override
     public void onItemSelected(City obj) {
-        if(selectedCity.get()!=null && selectedCity.get().equals(obj)){
+        if (selectedCity.get() != null && selectedCity.get().equals(obj)) {
             // Do this to ensure the observers know a new selection
             // has been made even when the city didn't change
             selectedCity.notifyChange();
