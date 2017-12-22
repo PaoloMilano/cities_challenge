@@ -11,7 +11,7 @@ public class City {
     public long _id;
     public City.Coordinates coord;
 
-    static class Coordinates{
+    public static class Coordinates{
         public double lon;
         public double lat;
     }

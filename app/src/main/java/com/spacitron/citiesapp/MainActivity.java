@@ -12,7 +12,9 @@ import android.view.WindowManager;
 import android.view.animation.DecelerateInterpolator;
 import android.view.inputmethod.InputMethodManager;
 
+import com.spacitron.citiesapp.citylist.CityListFragment;
 import com.spacitron.citiesapp.databinding.ActivityMainBinding;
+import com.spacitron.citiesapp.map.MapFragment;
 import com.spacitron.citiesapp.utils.FilesListConfig;
 
 public class MainActivity extends AppCompatActivity {

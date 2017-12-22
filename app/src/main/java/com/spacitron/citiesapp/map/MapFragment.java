@@ -1,5 +1,4 @@
-package com.spacitron.citiesapp;
-
+package com.spacitron.citiesapp.map;
 
 import android.arch.lifecycle.ViewModelProviders;
 import android.databinding.Observable;
@@ -14,6 +13,8 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.spacitron.citiesapp.City;
+import com.spacitron.citiesapp.CityViewModel;
 
 
 public class MapFragment extends SupportMapFragment implements OnMapReadyCallback {
