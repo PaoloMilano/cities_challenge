@@ -89,38 +89,34 @@ public class CityViewModelTest {
         assertEquals("\u2018Azriqam", cities.get(cities.size() - 1).name);
     }
 
+
     @Test
-    public void filterCitiesTest() {
+    public void filterableCityGetNameTest() {
         CityViewModel cityViewModel = new CityViewModel();
-        cityViewModel.makeSortedCitiesFromInputStream(new ByteArrayInputStream(cityData.getBytes()));
+        City city = cityViewModel.parseCities(new ByteArrayInputStream(cityData.getBytes())).get(0);
+        assertEquals(city.getDisplayName(), "Hurzuf, UA");
+    }
 
-        //Because filtering happens on a separate thread we need to give it some time to complete
-        try {
-            Thread.sleep(50);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
 
-        assertEquals(3, cityViewModel.filterCitiesByStartingString("las", cityViewModel.filteredCitiesMap.get(CityViewModel.EMPTY_KEY)).size());
-        assertEquals(2, cityViewModel.filterCitiesByStartingString("lass", cityViewModel.filteredCitiesMap.get(CityViewModel.EMPTY_KEY)).size());
+    @Test
+    public void buildAlphabeticalIndexTest() {
+        CityViewModel cityViewModel = new CityViewModel();
+        List<City> cities = cityViewModel.parseCities(new ByteArrayInputStream(cityData.getBytes()));
+        Map<Character, Pair<Integer, Integer>> citiesIndex = cityViewModel.getAlphabeticalCityIndex(cities);
 
-        List<City> filteredCityList = cityViewModel.filterCitiesByStartingString("lasss", cityViewModel.filteredCitiesMap.get(CityViewModel.EMPTY_KEY));
-        assertEquals(1, filteredCityList.size());
-        assertEquals("Lassspi", filteredCityList.get(0).name);
+        //There should be 3 'a' entries between 1 and 4
+        assertTrue(citiesIndex.get('a').first == 1);
+        assertTrue(citiesIndex.get('a').second == 4);
 
-        //Case shouldn't matter
-        assertEquals(3, cityViewModel.filterCitiesByStartingString("LAS", cityViewModel.filteredCitiesMap.get(CityViewModel.EMPTY_KEY)).size());
-        assertEquals(2, cityViewModel.filterCitiesByStartingString("LaSS", cityViewModel.filteredCitiesMap.get(CityViewModel.EMPTY_KEY)).size());
-
-        //Empty for non-matching word
-        assertEquals(0, cityViewModel.filterCitiesByStartingString("bs65uyvt567gu", cityViewModel.filteredCitiesMap.get(CityViewModel.EMPTY_KEY)).size());
+        //There should be 2 'k'
+        assertEquals(2, citiesIndex.get('k').second - citiesIndex.get('k').first);
     }
 
     //This test ensures that the various parts of the filtering mechanism work together
     @Test
     public void integrationFilterCitiesTest() {
         CityViewModel cityViewModel = new CityViewModel();
-        cityViewModel.makeSortedCitiesFromInputStream(new ByteArrayInputStream(cityData.getBytes()));
+        cityViewModel.makeSortedCitiesFromInputStreams(new ByteArrayInputStream(cityData.getBytes()));
 
         cityViewModel.filter.set("Lasss");
 
@@ -149,25 +145,30 @@ public class CityViewModelTest {
 
 
     @Test
-    public void filterableCityGetNameTest() {
+    public void filterCitiesTest() {
         CityViewModel cityViewModel = new CityViewModel();
-        City city = cityViewModel.parseCities(new ByteArrayInputStream(cityData.getBytes())).get(0);
-        assertEquals(city.getDisplayName(), "Hurzuf, UA");
-    }
+        cityViewModel.makeSortedCitiesFromInputStreams(new ByteArrayInputStream(cityData.getBytes()));
 
+        //Because filtering happens on a separate thread we need to give it some time to complete
+        try {
+            Thread.sleep(50);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
-    @Test
-    public void buildAlphabeticalIndexTest() {
-        CityViewModel cityViewModel = new CityViewModel();
-        List<City> cities = cityViewModel.parseCities(new ByteArrayInputStream(cityData.getBytes()));
-        Map<Character, Pair<Integer, Integer>> citiesIndex = cityViewModel.getAlphabeticalCityIndex(cities);
+        assertEquals(3, cityViewModel.filterCitiesByStartingString("las", cityViewModel.filteredCitiesMap.get(CityViewModel.EMPTY_KEY)).size());
+        assertEquals(2, cityViewModel.filterCitiesByStartingString("lass", cityViewModel.filteredCitiesMap.get(CityViewModel.EMPTY_KEY)).size());
 
-        //There should be 3 'a' entries between 1 and 4
-        assertTrue(citiesIndex.get('a').first == 1);
-        assertTrue(citiesIndex.get('a').second == 4);
+        List<City> filteredCityList = cityViewModel.filterCitiesByStartingString("lasss", cityViewModel.filteredCitiesMap.get(CityViewModel.EMPTY_KEY));
+        assertEquals(1, filteredCityList.size());
+        assertEquals("Lassspi", filteredCityList.get(0).name);
 
-        //There should be 2 'k'
-        assertEquals(2, citiesIndex.get('k').second - citiesIndex.get('k').first);
+        //Case shouldn't matter
+        assertEquals(3, cityViewModel.filterCitiesByStartingString("LAS", cityViewModel.filteredCitiesMap.get(CityViewModel.EMPTY_KEY)).size());
+        assertEquals(2, cityViewModel.filterCitiesByStartingString("LaSS", cityViewModel.filteredCitiesMap.get(CityViewModel.EMPTY_KEY)).size());
+
+        //Empty for non-matching word
+        assertEquals(0, cityViewModel.filterCitiesByStartingString("bs65uyvt567gu", cityViewModel.filteredCitiesMap.get(CityViewModel.EMPTY_KEY)).size());
     }
 
     @Test
@@ -195,7 +196,7 @@ public class CityViewModelTest {
     }
 
 
-    static  class TestCallBack extends Observable.OnPropertyChangedCallback{
+    static class TestCallBack extends Observable.OnPropertyChangedCallback {
 
         public int hitCounter = 0;
 

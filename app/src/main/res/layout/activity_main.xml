@@ -25,7 +25,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:ems="10"
-                android:hint="@string/filter_edit_hint"
+                android:hint="@{cityViewModel.isLoading? null: @string/filter_edit_hint}"
                 android:inputType="textPersonName"
                 android:maxLines="1"
                 android:enabled="@{!cityViewModel.isLoading}"

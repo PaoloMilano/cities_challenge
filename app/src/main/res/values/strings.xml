@@ -1,4 +1,4 @@
 <resources>
     <string name="app_name">CitiesApp</string>
-    <string name="filter_edit_hint"><font size="16">Hello there, try typing in this box...</font></string>
+    <string name="filter_edit_hint"><font size="16">Type your city here...</font></string>
 </resources>
