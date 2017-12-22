@@ -1,0 +1,23 @@
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.spacitron.citiesapp.MainActivity">
+
+    <data>
+        <variable
+            name="cityViewModel"
+            type="com.spacitron.citiesapp.CityViewModel" />
+    </data>
+
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/recycler_view"
+            bind:items="@{cityViewModel.filteredCitiesMap.get(cityViewModel.filter.get())}"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scrollbars="vertical" />
+    </FrameLayout>
+</layout>
