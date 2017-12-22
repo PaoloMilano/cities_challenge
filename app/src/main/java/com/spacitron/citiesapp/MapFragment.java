@@ -4,7 +4,9 @@ package com.spacitron.citiesapp;
 import android.arch.lifecycle.ViewModelProviders;
 import android.databinding.Observable;
 import android.databinding.ObservableField;
+import android.location.Location;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -34,6 +36,14 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
     public void onMapReady(GoogleMap googleMap) {
 
         map = googleMap;
+        map.setOnMyLocationClickListener(new GoogleMap.OnMyLocationClickListener() {
+            @Override
+            public void onMyLocationClick(@NonNull Location location) {
+                final LatLng position = new LatLng(location.getLatitude(), location.getLongitude());
+                map.addMarker(new MarkerOptions().position(position)).showInfoWindow();
+                map.animateCamera(CameraUpdateFactory.newLatLngZoom(position, 5));
+            }
+        });
 
         //If a city was selected before opening the map then move there
         final ObservableField<City> selectedCity = ViewModelProviders.of(getActivity()).get(CityViewModel.class).selectedCity;

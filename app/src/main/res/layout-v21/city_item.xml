@@ -4,25 +4,32 @@
     <data>
         <variable
             name="city"
-            type="com.spacitron.citiesapp.City" />
+            type="com.spacitron.citiesapp.City"/>
     </data>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/fadedColorPrimary"
         android:orientation="vertical"
         android:clipToPadding="false"
         android:onClick="@{()-> city.select()}"
         android:padding="@dimen/quarter_standard_margin">
 
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:elevation="@dimen/half_standard_margin"
+            android:background="@android:color/white">
         <TextView
             android:id="@+id/textView"
-            android:elevation="@dimen/half_standard_margin"
-            android:background="@android:color/white"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="@dimen/standard_margin"
+            android:scrollHorizontally="true"
+            android:ellipsize="end"
+            android:background="?selectableItemBackground"
+            android:maxLines="1"
             android:text="@{city.displayName}" />
+        </FrameLayout>
     </LinearLayout>
 </layout>
