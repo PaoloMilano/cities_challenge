@@ -6,16 +6,19 @@ import android.databinding.DataBindingUtil;
 import android.databinding.Observable;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.view.Surface;
 import android.view.View;
+import android.view.WindowManager;
 import android.view.animation.DecelerateInterpolator;
 import android.view.inputmethod.InputMethodManager;
 
 import com.spacitron.citiesapp.databinding.ActivityMainBinding;
+import com.spacitron.citiesapp.utils.FilesListConfig;
 
 public class MainActivity extends AppCompatActivity {
 
     private static int ENTER_FROM_BOTTOM_DURATION = 200;
-    View mapViewContainer = null;
+    private View mapViewContainer = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -24,25 +27,30 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         final CityViewModel cityViewModel = ViewModelProviders.of(this).get(CityViewModel.class);
-        cityViewModel.init(this);
+        cityViewModel.init(this, FilesListConfig.READABLE_JSON_FILES);
 
         cityViewModel.selectedCity.addOnPropertyChangedCallback(new Observable.OnPropertyChangedCallback() {
             @Override
             public void onPropertyChanged(Observable observable, int i) {
 
-                //Get a reference to the fragment container now so you are sure it was measured
+
+                //Get a reference to the fragment container here so you are sure it was measured
                 if (mapViewContainer == null) {
                     mapViewContainer = findViewById(R.id.map_container);
-                    mapViewContainer.setTranslationY(mapViewContainer.getHeight());
-                    mapViewContainer.setVisibility(View.VISIBLE);
                 }
 
                 InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
                 imm.hideSoftInputFromWindow(mapViewContainer.getWindowToken(), 0);
 
-                //Rather than adding a fragment to the backstack, put the map inside a view and use animations to show/hide it.
-                //This will save us having to recreate the map at every single click.
-                mapViewContainer.animate().translationY(0).setInterpolator(new DecelerateInterpolator()).setDuration(ENTER_FROM_BOTTOM_DURATION).start();
+                // This only needs to happen in portrait as when in landscape the map is already shown
+                if(((WindowManager) getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay().getRotation() == Surface.ROTATION_0) {
+                    mapViewContainer.setTranslationY(mapViewContainer.getHeight());
+                    mapViewContainer.setVisibility(View.VISIBLE);
+
+                    //Rather than adding a fragment to the backstack, put the map inside a view and use animations to show/hide it.
+                    //This will save us having to recreate the map at every single click.
+                    mapViewContainer.animate().translationY(0).setInterpolator(new DecelerateInterpolator()).setDuration(ENTER_FROM_BOTTOM_DURATION).start();
+                }
             }
         });
 
