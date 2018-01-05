@@ -25,15 +25,15 @@ We have a list of cities containing around 200k entries in JSON format. Each ent
 						
 
 Your task is to:											 								
-●  Display this of cities on a scrollable list in alphabetic order (city first, country after)
+    ●  Display this of cities on a scrollable list in alphabetic order (city first, country after)
 											
-    ○  "Denver, US" should appear before, "Sydney, Australia"
+        ○  "Denver, US" should appear before, "Sydney, Australia"
 								
-    ○  "Anaheim, US" should appear before "Denver, US"
+        ○  "Anaheim, US" should appear before "Denver, US"
 			
-●  Be able to filter the results by a given prefix string, over the city.
-●  Selecting a city will show a map centered on the coordinates associated with the city.
-●  Optimize for fast searches, loading time of the app is not so important
+    ●  Be able to filter the results by a given prefix string, over the city.
+    ●  Selecting a city will show a map centered on the coordinates associated with the city.
+    ●  Optimize for fast searches, loading time of the app is not so important
 								
 We define a prefix string as: a substring that matches the initial characters of the target string. For instance, assume the following entries:
 Alabama, US
@@ -50,14 +50,14 @@ If the prefix given is “Alb” then the only result is “Albuquerque, US”
 Additional requirements/restrictions:
 						
 	
-●  The list will be provided to you as a plain text JSON format array.
-●  The UI should be as responsive as possible while typing a filter.
-●  The list should be updated with every character added/removed to the filter.
-●  You can preprocess the list into any other representation that you consider more efficient for searches and display. Provide information of why that representation is more efficient in the comments of the code.		
-●  Database implementations are forbidden
-●  Provide unit tests, that your search algorithm is displaying the correct results giving different inputs, including invalid inputs.
-●  Alpha/beta versions of the IDE are forbidden, you must work with the stable version of the IDE		
-●  The code of the assignment has to be delivered along with the git repository (.git folder). We want to see the progress evolution
+   ●  The list will be provided to you as a plain text JSON format array.
+   ●  The UI should be as responsive as possible while typing a filter.
+   ●  The list should be updated with every character added/removed to the filter.
+   ●  You can preprocess the list into any other representation that you consider more efficient for searches and display. Provide information of why that representation is more efficient in the comments of the code.		
+   ●  Database implementations are forbidden
+   ●  Provide unit tests, that your search algorithm is displaying the correct results giving different inputs, including invalid inputs.
+   ●  Alpha/beta versions of the IDE are forbidden, you must work with the stable version of the IDE		
+   ●  The code of the assignment has to be delivered along with the git repository (.git folder). We want to see the progress evolution
 			
 
 	
