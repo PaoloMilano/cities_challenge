@@ -11,10 +11,10 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.spacitron.citiesapp.City;
 import com.spacitron.citiesapp.CityRecyclerViewAdapter;
-import com.spacitron.citiesapp.CityViewModel;
 import com.spacitron.citiesapp.R;
+import com.spacitron.citiesapp.citymodel.City;
+import com.spacitron.citiesapp.cityviewmodel.CityViewModel;
 import com.spacitron.citiesapp.databinding.FragmentCityListBinding;
 
 import java.util.List;

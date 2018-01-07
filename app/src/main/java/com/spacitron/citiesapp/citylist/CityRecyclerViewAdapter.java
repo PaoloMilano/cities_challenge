@@ -5,6 +5,7 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
+import com.spacitron.citiesapp.citymodel.City;
 import com.spacitron.citiesapp.databinding.CityItemBinding;
 
 import java.util.ArrayList;

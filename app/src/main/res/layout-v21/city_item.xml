@@ -4,7 +4,7 @@
     <data>
         <variable
             name="city"
-            type="com.spacitron.citiesapp.City"/>
+            type="com.spacitron.citiesapp.citymodel.City"/>
     </data>
 
     <LinearLayout

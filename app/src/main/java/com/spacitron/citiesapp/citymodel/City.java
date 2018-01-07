@@ -1,4 +1,4 @@
-package com.spacitron.citiesapp;
+package com.spacitron.citiesapp.citymodel;
 
 import com.spacitron.citiesapp.utils.OnItemSelectedListener;
 
@@ -6,8 +6,8 @@ public class City {
 
     private String displayName;
 
-    protected String country;
-    protected String name;
+    public String country;
+    public String name;
     public long _id;
     public City.Coordinates coord;
 
@@ -22,11 +22,6 @@ public class City {
         if(itemSelectedListener!=null) {
             itemSelectedListener.onItemSelected(this);
         }
-    }
-
-
-    protected String getLowerCaseDisplayName(){
-        return getDisplayName().toLowerCase();
     }
 
     public String getDisplayName() {

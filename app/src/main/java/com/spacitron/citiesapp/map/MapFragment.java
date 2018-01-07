@@ -11,8 +11,8 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.spacitron.citiesapp.City;
-import com.spacitron.citiesapp.CityViewModel;
+import com.spacitron.citiesapp.citymodel.City;
+import com.spacitron.citiesapp.cityviewmodel.CityViewModel;
 
 
 public class MapFragment extends SupportMapFragment implements OnMapReadyCallback {

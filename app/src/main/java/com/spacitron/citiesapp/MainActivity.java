@@ -13,9 +13,13 @@ import android.view.animation.DecelerateInterpolator;
 import android.view.inputmethod.InputMethodManager;
 
 import com.spacitron.citiesapp.citylist.CityListFragment;
+import com.spacitron.citiesapp.citymodel.CityFetcher;
+import com.spacitron.citiesapp.cityviewmodel.CityViewModel;
 import com.spacitron.citiesapp.databinding.ActivityMainBinding;
 import com.spacitron.citiesapp.map.MapFragment;
 import com.spacitron.citiesapp.utils.FilesListConfig;
+
+import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -29,7 +33,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         final CityViewModel cityViewModel = ViewModelProviders.of(this).get(CityViewModel.class);
-        cityViewModel.init(this, FilesListConfig.READABLE_JSON_FILES);
+        cityViewModel.init(new CityFetcher(this, FilesListConfig.READABLE_JSON_FILES), Executors.newFixedThreadPool(10));
 
         cityViewModel.selectedCity.addOnPropertyChangedCallback(new Observable.OnPropertyChangedCallback() {
             @Override
