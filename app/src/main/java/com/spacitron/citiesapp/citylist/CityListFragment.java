@@ -1,4 +1,4 @@
-package com.spacitron.citiesapp;
+package com.spacitron.citiesapp.citylist;
 
 import android.arch.lifecycle.ViewModelProviders;
 import android.databinding.BindingAdapter;
@@ -11,6 +11,10 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.spacitron.citiesapp.CityRecyclerViewAdapter;
+import com.spacitron.citiesapp.R;
+import com.spacitron.citiesapp.citymodel.City;
+import com.spacitron.citiesapp.cityviewmodel.CityViewModel;
 import com.spacitron.citiesapp.databinding.FragmentCityListBinding;
 
 import java.util.List;
