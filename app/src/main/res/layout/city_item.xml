@@ -3,6 +3,9 @@
 
     <data>
         <variable
+            name="onItemSelected"
+            type="com.spacitron.citiesapp.utils.OnItemSelectedListener"/>
+        <variable
             name="city"
             type="com.spacitron.citiesapp.citymodel.City"/>
     </data>
@@ -13,7 +16,7 @@
         android:orientation="vertical"
         android:clipToPadding="false"
         android:background="?selectableItemBackground"
-        android:onClick="@{()-> city.select()}"
+        android:onClick="@{()-> onItemSelected.onItemSelected(city) }"
         android:padding="@dimen/quarter_standard_margin">
 
         <TextView

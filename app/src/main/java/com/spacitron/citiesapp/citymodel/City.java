@@ -16,14 +16,6 @@ public class City {
         public double lat;
     }
 
-    protected OnItemSelectedListener<City> itemSelectedListener;
-
-    public void select(){
-        if(itemSelectedListener!=null) {
-            itemSelectedListener.onItemSelected(this);
-        }
-    }
-
     public String getDisplayName() {
 
         //Lazy compute property even though in this ViewModel it will be called almost immediately.

@@ -1,12 +1,14 @@
-package com.spacitron.citiesapp;
+package com.spacitron.citiesapp.citylist;
 
 import android.databinding.DataBindingUtil;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
+import com.spacitron.citiesapp.R;
 import com.spacitron.citiesapp.citymodel.City;
 import com.spacitron.citiesapp.databinding.CityItemBinding;
+import com.spacitron.citiesapp.utils.OnItemSelectedListener;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,6 +17,7 @@ import java.util.List;
 public class CityRecyclerViewAdapter extends RecyclerView.Adapter<CityRecyclerViewAdapter.CityViewHolder> {
 
     private List<City> cities;
+    private OnItemSelectedListener<City> onItemSelectedListener;
 
     public CityRecyclerViewAdapter(){
         cities = new ArrayList<>();
@@ -24,6 +27,10 @@ public class CityRecyclerViewAdapter extends RecyclerView.Adapter<CityRecyclerVi
         this.cities.clear();
         this.cities.addAll(cities);
         notifyDataSetChanged();
+    }
+
+    public void setOnItemSelectedLustever(final OnItemSelectedListener<City> onItemSelectedListener){
+        this.onItemSelectedListener = onItemSelectedListener;
     }
 
     @Override
@@ -61,6 +68,7 @@ public class CityRecyclerViewAdapter extends RecyclerView.Adapter<CityRecyclerVi
 
         public void bind(City cityItem) {
             binding.setCity(cityItem);
+            binding.setOnItemSelected(onItemSelectedListener);
             binding.executePendingBindings();
         }
     }

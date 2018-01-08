@@ -11,11 +11,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.spacitron.citiesapp.CityRecyclerViewAdapter;
 import com.spacitron.citiesapp.R;
 import com.spacitron.citiesapp.citymodel.City;
 import com.spacitron.citiesapp.cityviewmodel.CityViewModel;
 import com.spacitron.citiesapp.databinding.FragmentCityListBinding;
+import com.spacitron.citiesapp.utils.OnItemSelectedListener;
 
 import java.util.List;
 
@@ -41,13 +41,21 @@ public class CityListFragment extends Fragment {
 
     @BindingAdapter("bind:items")
     public static void bindList(final RecyclerView view, final List<City> list) {
-        if(view.getAdapter()==null) {
+        getRecyclerViewAdapter(view).setItems(list);
+    }
+
+    @BindingAdapter("bind:onItemSelected")
+    public static void bindOnItemSelected(final RecyclerView view, final OnItemSelectedListener<City> onItemSelectedListener) {
+        getRecyclerViewAdapter(view).setOnItemSelectedLustever(onItemSelectedListener);
+    }
+
+
+    private static CityRecyclerViewAdapter getRecyclerViewAdapter(final RecyclerView view) {
+        if (view.getAdapter() == null) {
             final LinearLayoutManager layoutManager = new LinearLayoutManager(view.getContext());
             view.setLayoutManager(layoutManager);
             view.setAdapter(new CityRecyclerViewAdapter());
         }
-        if(list!=null) {
-            ((CityRecyclerViewAdapter) view.getAdapter()).setItems(list);
-        }
+        return ((CityRecyclerViewAdapter) view.getAdapter());
     }
 }
