@@ -12,7 +12,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:clipToPadding="false"
-        android:onClick="@{()-> city.select()}"
+        android:onClick="@{()-> onItemSelected.onItemSelected(city)}"
         android:padding="@dimen/quarter_standard_margin">
 
         <FrameLayout
