@@ -4,7 +4,6 @@
     tools:context="com.spacitron.citiesapp.MainActivity">
 
     <data>
-        <import type="android.view.View"/>
         <variable
             name="cityViewModel"
             type="com.spacitron.citiesapp.cityviewmodel.CityViewModel" />
@@ -14,30 +13,11 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <LinearLayout
-            android:id="@+id/city_list_container"
+        <FrameLayout
+            android:id="@+id/city_list_fragment_container"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical">
+            android:layout_height="match_parent" />
 
-            <EditText
-                android:id="@+id/filter_edit"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:ems="10"
-                android:hint="@{cityViewModel.isLoading? null: @string/filter_edit_hint}"
-                android:inputType="textPersonName"
-                android:maxLines="1"
-                android:enabled="@{!cityViewModel.isLoading}"
-                android:text="@={cityViewModel.filter}" />
-
-            <FrameLayout
-                android:id="@+id/city_list_fragment_container"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent" />
-
-
-        </LinearLayout>
 
         <FrameLayout
             android:id="@+id/map_container"
@@ -45,19 +25,5 @@
             android:layout_height="match_parent"
             android:background="@color/white"
             android:visibility="invisible" />
-
-        <FrameLayout
-            android:id="@+id/loading_container"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="@color/fadedColorPrimary"
-            android:visibility="@{cityViewModel.isLoading? View.VISIBLE: View.GONE}">
-            <ProgressBar
-                style="?android:attr/progressBarStyle"
-                android:layout_gravity="center"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
-        </FrameLayout>
-
     </RelativeLayout>
 </layout>

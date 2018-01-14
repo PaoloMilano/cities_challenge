@@ -12,12 +12,11 @@ import com.spacitron.citiesapp.utils.Callback;
 import com.spacitron.citiesapp.utils.OnItemSelectedListener;
 
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 
-import static com.spacitron.citiesapp.cityviewmodel.CityFilterHelper.EMPTY_KEY;
+import static com.spacitron.citiesapp.citymodel.CityFilterHelper.EMPTY_KEY;
 
 
-public class CityViewModel extends ViewModel implements OnItemSelectedListener<City> {
+public class CityViewModel extends ViewModel implements OnItemSelectedListener<City>, Callback<City> {
 
 
     public final ObservableBoolean isLoading;
@@ -25,10 +24,8 @@ public class CityViewModel extends ViewModel implements OnItemSelectedListener<C
     public final ObservableField<City> selectedCity;
     public final ObservableArrayList<City> filteredCityList;
 
-    private CityFilterHelper cityFilterHelper;
-
-
-    private boolean isInitialized;
+    private CityFetcher cityFetcher;
+    private OnPropertyChanged onPropertyChangedListener;
 
     public CityViewModel() {
         isLoading = new ObservableBoolean();
@@ -36,67 +33,27 @@ public class CityViewModel extends ViewModel implements OnItemSelectedListener<C
         filter.set(EMPTY_KEY);
         filteredCityList = new ObservableArrayList<>();
         selectedCity = new ObservableField<>();
-        isInitialized = false;
     }
 
-    public void init(final CityFetcher cityParser, final ExecutorService executorService) {
 
-        // Keep track of whether this was alrady initialised so you don't end up reading the same data
-        // for every configuration change. We could also extend AndroidViewModel to do this but
-        // I'd rather limit the dependencies on Android as much as possible here
-        if (isInitialized) {
-            return;
+
+    public void init(final CityFetcher cityFetcher) {
+        if(this.cityFetcher!=null){
+            this.cityFetcher.cancel();
         }
-        isInitialized = true;
+        this.cityFetcher = cityFetcher;
 
-
+        filteredCityList.clear();
         isLoading.set(true);
 
-        cityParser.getAllCities(executorService, new Callback<City>() {
+        cityFetcher.getFilteredCities(filter.get(), this);
 
-            @Override
-            public void onSuccess(List<City> result) {
-                cityFilterHelper = new CityFilterHelper(result, executorService);
-
-                filteredCityList.clear();
-                filteredCityList.addAll(cityFilterHelper.filteredCities(filter.get()));
-
-                makeFilterListener();
-
-                isLoading.set(false);
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                isLoading.set(false);
-            }
-        });
-
+        if(onPropertyChangedListener==null){
+            onPropertyChangedListener = new OnPropertyChanged();
+            filter.addOnPropertyChangedCallback(onPropertyChangedListener);
+        }
 
     }
-
-    private void makeFilterListener() {
-        filter.addOnPropertyChangedCallback(new Observable.OnPropertyChangedCallback() {
-            @Override
-            public void onPropertyChanged(Observable observable, int i) {
-
-                cityFilterHelper.getFilteredCities(filter.get(), new Callback<City>() {
-                    @Override
-                    public void onSuccess(List<City> result) {
-                        filteredCityList.clear();
-                        filteredCityList.addAll(result);
-                    }
-
-                    @Override
-                    public void onError(Throwable t) {
-
-                    }
-                });
-
-            }
-        });
-    }
-
 
     @Override
     public void onItemSelected(City obj) {
@@ -106,5 +63,31 @@ public class CityViewModel extends ViewModel implements OnItemSelectedListener<C
             selectedCity.notifyChange();
         }
         selectedCity.set(obj);
+    }
+
+    @Override
+    public void onSuccess(List<City> result) {
+        isLoading.set(false);
+        filteredCityList.clear();
+        filteredCityList.addAll(result);
+    }
+
+    @Override
+    public void onError(Throwable t) {
+
+    }
+
+    class OnPropertyChanged extends Observable.OnPropertyChangedCallback{
+
+        @Override
+        public void onPropertyChanged(Observable observable, int i) {
+            cityFetcher.getFilteredCities(filter.get(), CityViewModel.this);
+        }
+    }
+
+    @Override
+    protected void onCleared() {
+        super.onCleared();
+        cityFetcher.cancel();
     }
 }

@@ -19,12 +19,11 @@ import com.spacitron.citiesapp.databinding.ActivityMainBinding;
 import com.spacitron.citiesapp.map.MapFragment;
 import com.spacitron.citiesapp.utils.FilesListConfig;
 
-import java.util.concurrent.Executors;
-
 public class MainActivity extends AppCompatActivity {
 
     private static int ENTER_FROM_BOTTOM_DURATION = 200;
     private View mapViewContainer = null;
+    private CityViewModel cityViewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,9 +31,7 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
 
-        final CityViewModel cityViewModel = ViewModelProviders.of(this).get(CityViewModel.class);
-        cityViewModel.init(new CityFetcher(this, FilesListConfig.READABLE_JSON_FILES), Executors.newFixedThreadPool(10));
-
+        cityViewModel = ViewModelProviders.of(this).get(CityViewModel.class);
         cityViewModel.selectedCity.addOnPropertyChangedCallback(new Observable.OnPropertyChangedCallback() {
             @Override
             public void onPropertyChanged(Observable observable, int i) {
@@ -60,6 +57,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+
         getSupportFragmentManager()
                 .beginTransaction()
                 .replace(R.id.city_list_fragment_container, new CityListFragment())
@@ -69,6 +67,7 @@ public class MainActivity extends AppCompatActivity {
         final ActivityMainBinding binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
         binding.setCityViewModel(cityViewModel);
 
+        cityViewModel.init(new CityFetcher(this, FilesListConfig.READABLE_JSON_FILES));
     }
 
 

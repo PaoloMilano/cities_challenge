@@ -12,25 +12,56 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 
 public class CityFetcher {
 
     private final Context context;
-
+    private  CityFilterHelper cityFilter;
     private final String[] fileNames;
+    private final ExecutorService executor;
 
     public CityFetcher(final Context context, final String[] fileNames) {
         this.context = context;
         this.fileNames = fileNames;
+
+        this.executor = Executors.newFixedThreadPool(10);
     }
 
 
-    public void getAllCities(final ExecutorService executor, final Callback<City> callback) {
+    public void getFilteredCities(final String filter, final Callback<City> callback) {
+
+        if (cityFilter ==  null) {
+            getAllCities(new Callback<City>() {
+                @Override
+                public void onSuccess(List<City> result) {
+
+                    cityFilter = new CityFilterHelper(result);
+                    callback.onSuccess(cityFilter.getFilteredCities(filter));
+
+                }
+
+                @Override
+                public void onError(Throwable t) {
+                    callback.onError(t);
+                }
+            });
+
+        } else {
+            executor.submit(new Runnable() {
+                @Override
+                public void run() {
+                    callback.onSuccess(cityFilter.getFilteredCities(filter));
+                }
+            });
+        }
+    }
+
+    protected void getAllCities(final Callback<City> callback) {
 
         executor.submit(new Runnable() {
             @Override
@@ -41,7 +72,7 @@ public class CityFetcher {
 
                 for (int i = 0; i < fileNames.length; i++) {
 
-                    final String fileName  = fileNames[i];
+                    final String fileName = fileNames[i];
 
                     executor.submit(new Runnable() {
                         @Override
@@ -66,7 +97,7 @@ public class CityFetcher {
                     callback.onError(e);
                 }
 
-                callback.onSuccess(sortCities(cities));
+                callback.onSuccess(cities);
             }
         });
     }
@@ -88,18 +119,7 @@ public class CityFetcher {
         return result;
     }
 
-
-    protected List<City> sortCities(final List<City> cities) {
-
-        cities.removeAll(Collections.singleton(null));
-
-        Collections.sort(cities, new Comparator<City>() {
-            @Override
-            public int compare(City o1, City o2) {
-                return o1.getDisplayName().toLowerCase().compareTo(o2.getDisplayName().toLowerCase());
-            }
-        });
-
-        return cities;
+    public void cancel(){
+        executor.shutdownNow();
     }
 }
