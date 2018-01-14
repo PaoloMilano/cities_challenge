@@ -16,26 +16,6 @@ import static junit.framework.Assert.fail;
 
 public class CityFetcherTest {
 
-    @Test
-    public void sortCitiesTest() {
-
-        try {
-
-            TestyCityFetcher cityFetcher = new TestyCityFetcher();
-            List<City> cities = cityFetcher.sortCities(cityFetcher.parseCities(new ByteArrayInputStream(CityData.data.getBytes())));
-
-            assertEquals("alupka", cities.get(0).name.toLowerCase());
-            assertEquals("AA", cities.get(0).country);
-
-            assertEquals("alupka", cities.get(1).name.toLowerCase());
-            assertEquals("UA", cities.get(1).country);
-
-            assertEquals("\u2018Azriqam", cities.get(cities.size() - 1).name);
-
-        } catch (IOException e) {
-            fail(e.getMessage());
-        }
-    }
 
 
     @Test
@@ -74,11 +54,6 @@ public class CityFetcherTest {
         @Override
         protected List<City> parseCities(InputStream inputStream) throws IOException {
             return super.parseCities(inputStream);
-        }
-
-        @Override
-        protected List<City> sortCities(List<City> cities) {
-            return super.sortCities(cities);
         }
     }
 }

@@ -1,4 +1,6 @@
 <resources>
     <string name="app_name">CitiesApp</string>
     <string name="filter_edit_hint"><font size="16">Type your city here...</font></string>
+    <string name="binary_button_text"><font size="16">Tap to use binary filtering</font></string>
+    <string name="indexed_button_text"><font size="16">Tap to use indexed filtering</font></string>
 </resources>

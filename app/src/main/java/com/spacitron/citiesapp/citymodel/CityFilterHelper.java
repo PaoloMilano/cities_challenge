@@ -1,51 +1,50 @@
-package com.spacitron.citiesapp.cityviewmodel;
+package com.spacitron.citiesapp.citymodel;
 
 import android.support.v4.util.Pair;
 
-import com.spacitron.citiesapp.citymodel.City;
-import com.spacitron.citiesapp.utils.Callback;
-
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
 
 
 public class CityFilterHelper {
 
-    // Empty key - corresponding to an empty string - this will be used to mark the initial
-    //cache containing the complete, unfiltered list of cities.
+    // Empty key - corresponding to an empty string - this will
+    // be used to string compare empty search filters
     public static final String EMPTY_KEY = new String();
 
-    private final Map<Character, Pair<Integer, Integer>> alphabeticalCityIndex;
+    private Map<Character, Pair<Integer, Integer>> alphabeticalCityIndex;
     private final Map<String, List<City>> filteredCitiesMap;
 
 
-    final ExecutorService executor;
+    public CityFilterHelper(List<City> filterableCities) {
 
+        filterableCities.removeAll(Collections.singleton(null));
 
-    public CityFilterHelper(final List<City> allCities, final ExecutorService executor) {
-        this.executor = executor;
-        filteredCitiesMap = new HashMap<>();
-        filteredCitiesMap.put(EMPTY_KEY, allCities);
-        alphabeticalCityIndex = getAlphabeticalCityIndex(allCities);
-    }
-
-    void getFilteredCities(final String filter, final Callback<City> callback){
-
-        executor.submit(new Runnable() {
+        Collections.sort(filterableCities, new Comparator<City>() {
             @Override
-            public void run() {
-                callback.onSuccess(filteredCities(filter));
+            public int compare(City o1, City o2) {
+                return o1.getDisplayName().toLowerCase().compareTo(o2.getDisplayName().toLowerCase());
             }
         });
+
+        alphabeticalCityIndex = getAlphabeticalCityIndex(filterableCities);
+
+        filteredCitiesMap = new HashMap<>();
+        filteredCitiesMap.put(EMPTY_KEY, filterableCities);
     }
 
-    protected List<City> filteredCities(String filter) {
+
+    public List<City> getFilteredCities(String filter) {
 
         // First things first, make the filter text lowercase
         filter = filter.toLowerCase();
+        if (filter.equals(EMPTY_KEY)) {
+            return filteredCitiesMap.get(EMPTY_KEY);
+        }
 
         // Next, caches whose name does not start with the current filter text
         // should be cleaned-up as they are not relevant right now and we don't want
@@ -57,7 +56,7 @@ public class CityFilterHelper {
                 redundantKeys.add(mapKey);
             }
         }
-        for(final String redundantKey: redundantKeys){
+        for (final String redundantKey : redundantKeys) {
             filteredCitiesMap.remove(redundantKey);
         }
 
@@ -116,36 +115,6 @@ public class CityFilterHelper {
         return filteredCitiesMap.get(filter);
     }
 
-    protected List<City> filterCitiesByStartingString(String filterString, List<City> cities) {
-
-        //If we have nothing to filter with there's we can stop here
-        if (filterString == null || filterString.isEmpty() || cities.isEmpty()) {
-            return cities;
-        }
-
-        List<City> result = new ArrayList<>();
-
-        //Keep track of when you start matching so you can break out of the
-        //loop as soon as that's done to save cycles.
-        boolean filterStarted = false;
-
-        for (City city : cities) {
-
-            //As this will is managed by a worker thread make sure you stop executing if the work is no longer needed.
-            if (Thread.interrupted()) {
-                break;
-            }
-            if (city.getDisplayName().toLowerCase().startsWith(filterString.toLowerCase())) {
-                result.add(city);
-                if (!filterStarted) {
-                    filterStarted = true;
-                }
-            } else if (filterStarted) {
-                break;
-            }
-        }
-        return result;
-    }
 
     protected Map<Character, Pair<Integer, Integer>> getAlphabeticalCityIndex(final List<City> indexableCities) {
 
@@ -170,8 +139,87 @@ public class CityFilterHelper {
         return alphabeticalIndex;
     }
 
-
-    void cancel() {
-
+    protected List<City> filterCitiesByStartingString(String filterString, List<City> cities) {
+        cities = cities.subList(getStartingIndexForName(filterString, cities), cities.size());
+        cities = cities.subList(0, getEndingIndexForName(filterString, cities));
+        return cities;
     }
+
+    // This gets the index of the first element in the list containing the filter substring
+    protected int getStartingIndexForName(String cityNameSubstring, List<City> cities) {
+
+        if (cities.isEmpty()) {
+            return 0;
+        }
+
+        final City city = getStartingCityForName(cityNameSubstring, cities);
+
+        // We need to do this because the city we get might be the first of
+        // the valid sequence or the one immediately preceding it.
+        if (!city.getDisplayName().toLowerCase().startsWith(cityNameSubstring)) {
+            return cities.indexOf(city) + 1;
+        }
+
+        return cities.indexOf(city);
+    }
+
+    // This gets the index of the first element that is greater than the filter substring
+    protected int getEndingIndexForName(String cityNameSubstring, List<City> cities) {
+
+        if (cities.isEmpty()) {
+            return 0;
+        }
+
+        final City city = getEndingCityForName(cityNameSubstring, cities);
+
+        // We need to do this because the city we get might be the last in the
+        // sequence of valid cities of the first following it.
+        if (city.getDisplayName().toLowerCase().startsWith(cityNameSubstring)) {
+            return cities.indexOf(city) + 1;
+        }
+        return cities.indexOf(city);
+    }
+
+    private City getStartingCityForName(String cityNameSubstring, List<City> cities) {
+        if (cities.size() == 1) {
+            return cities.get(0);
+        }
+
+        cityNameSubstring = cityNameSubstring.toLowerCase();
+
+        if (cities.get(0).getDisplayName().toLowerCase().startsWith(cityNameSubstring)) {
+            return cities.get(0);
+        }
+
+        int middle = cities.size() / 2;
+
+        final String middleName = cities.get(middle).getDisplayName().toLowerCase();
+
+        if (cityNameSubstring.compareTo(middleName) > 0) {
+            return getStartingCityForName(cityNameSubstring, cities.subList(middle, cities.size()));
+        } else {
+            return getStartingCityForName(cityNameSubstring, cities.subList(0, middle));
+        }
+    }
+
+    private City getEndingCityForName(String cityNameSubstring, List<City> cities) {
+
+        if (cities.size() == 1) {
+            return cities.get(0);
+        }
+
+        cityNameSubstring = cityNameSubstring.toLowerCase();
+
+        int middle = cities.size() / 2;
+
+        final String middleName = cities.get(middle).getDisplayName().toLowerCase().substring(0, cityNameSubstring.length());
+
+        if (cityNameSubstring.compareTo(middleName) >= 0) {
+            return getEndingCityForName(cityNameSubstring, cities.subList(middle, cities.size()));
+        } else {
+            return getEndingCityForName(cityNameSubstring, cities.subList(0, middle));
+        }
+    }
+
+
 }

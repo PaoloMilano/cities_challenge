@@ -61,15 +61,16 @@ public class CityDataFetcherPerformanceTest {
         }
 
         @Override
-        public void getAllCities(ExecutorService executor, Callback<City> callback) {
-            super.getAllCities(executor, callback);
+        protected void getAllCities(Callback<City> callback) {
+            super.getAllCities(callback);
         }
+
     }
 
     List<City> getCities(String ... files){
         parsed = false;
         final List<City> cities = new ArrayList<>();
-        new TestyCityFetcher(files).getAllCities(executorService, new Callback<City>() {
+        new TestyCityFetcher(files).getAllCities(new Callback<City>() {
             @Override
             public void onSuccess(List<City> result) {
                 cities.addAll(result);
